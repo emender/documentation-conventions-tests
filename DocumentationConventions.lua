@@ -62,6 +62,7 @@ function DocumentationConventions.setUp()
       language = "en-US"
     end
 
+    DocumentationConventions.atomicTypos = loadAtomicTypos(getTestDirectory() .. DocumentationConventions.atomicTyposFileName)
     DocumentationConventions.aspellDictionary = loadAspellDictionary(getTestDirectory() .. DocumentationConventions.aspellFileName)
 end
 
@@ -80,6 +81,27 @@ function loadAspellDictionary(filename)
         end
     end
     pass("Aspell dictionary: " .. cnt .. " words")
+    return words
+end
+
+
+
+--
+-- Helper function that loads atomic typos.
+--
+function loadAtomicTypos(filename)
+    local words = {}
+    local cnt = 0
+    for line in io.lines(filename) do
+        local i = string.find(line, "->")
+        if i then
+            local key = string.sub(line, 1, i-1)
+            local val = string.sub(line, i+2)
+            words[key]=val
+            cnt = cnt + 1
+        end
+    end
+    pass("Atomic typos: " .. cnt .. " words")
     return words
 end
 
