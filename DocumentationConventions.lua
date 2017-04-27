@@ -62,6 +62,25 @@ function DocumentationConventions.setUp()
       language = "en-US"
     end
 
+    DocumentationConventions.aspellDictionary = loadAspellDictionary(getTestDirectory() .. DocumentationConventions.aspellFileName)
+end
+
+
+
+--
+-- Helper function that loads aspell dictionary.
+--
+function loadAspellDictionary(filename)
+    local words = {}
+    local cnt = 0
+    for line in io.lines(filename) do
+        if line ~= "" then
+            words[string.lower(line)] = true
+            cnt = cnt + 1
+        end
+    end
+    pass("Aspell dictionary: " .. cnt .. " words")
+    return words
 end
 
 
