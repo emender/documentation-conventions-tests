@@ -26,6 +26,9 @@ DocumentationConventions = {
         changed = "2017-04-27",
         tags = {"DocBook", "Release"}
     },
+    aspellFileName = "aspell.txt",
+    tagsWithReadableText = {"para"},
+    admonitions = {"note", "warning", "important"},
 }
 
 
@@ -34,6 +37,31 @@ DocumentationConventions = {
 --- Function which runs first. This is place where all objects are created.
 --
 function DocumentationConventions.setUp()
+    dofile(getScriptDirectory() .. "lib/xml.lua")
+    dofile(getScriptDirectory() .. "lib/publican.lua")
+    dofile(getScriptDirectory() .. "lib/docbook.lua")
+    dofile(getScriptDirectory() .. "lib/sql.lua")
+
+    -- Create publican object.
+    DocumentationConventions.pubObj = publican.create("publican.cfg")
+
+    -- Create xml object.
+    DocumentationConventions.xmlObj = xml.create(DocumentationConventions.pubObj:findMainFile())
+
+    -- Create docbook object.
+    DocumentationConventions.docObj = docbook.create(DocumentationConventions.pubObj:findMainFile())
+
+    -- Get readable text.
+    DocumentationConventions.readableText = DocumentationConventions.docObj:getReadableText()
+
+    -- Get language code from this book.
+    local language = TestWritingStyle.pubObj:getOption("xml_lang")
+
+    -- Default language is en-US:
+    if not language then
+      language = "en-US"
+    end
+
 end
 
 
