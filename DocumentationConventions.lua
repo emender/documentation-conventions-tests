@@ -89,11 +89,15 @@ end
 -- Helper function that returns test directory
 --
 function getTestDirectory()
-    local path = debug.getinfo(1).short_src
+    local path = debug.getinfo(1).source
     if not path then
         return nil
     end
-    return string.sub(path, 1, string.lastIndexOf(path, "/"))
+    if path:startsWith("@") then
+        return string.sub(path, 2, string.lastIndexOf(path, "/"))
+    else
+        return string.sub(path, 1, string.lastIndexOf(path, "/"))
+    end
 end
 
 
