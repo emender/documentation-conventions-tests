@@ -85,6 +85,19 @@ end
 
 
 
+--
+-- Helper function that returns test directory
+--
+function getTestDirectory()
+    local path = debug.getinfo(1).short_src
+    if not path then
+        return nil
+    end
+    return string.sub(path, 1, string.lastIndexOf(path, "/"))
+end
+
+
+
 ---
 --- Tests that a guide does not contain any violations against our word usage guidelines.
 ---
