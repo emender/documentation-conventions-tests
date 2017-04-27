@@ -55,7 +55,7 @@ function DocumentationConventions.setUp()
     DocumentationConventions.readableText = DocumentationConventions.docObj:getReadableText()
 
     -- Get language code from this book.
-    local language = TestWritingStyle.pubObj:getOption("xml_lang")
+    local language = DocumentationConventions.pubObj:getOption("xml_lang")
 
     -- Default language is en-US:
     if not language then
