@@ -27,8 +27,12 @@ DocumentationConventions = {
         tags = {"DocBook", "Release"}
     },
     aspellFileName = "aspell.txt",
+    atomicTyposFileName = "atomic_typos.txt",
     tagsWithReadableText = {"para"},
     admonitions = {"note", "warning", "important"},
+    whitelistServiceUrl = "glossary.service.org:3000/whitelist/",
+    blacklistServiceUrl = "glossary.service.org:3000/blacklist/",
+    glossaryServiceUrl = "glossary.service.org:3000/glossary/",
 }
 
 
