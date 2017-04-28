@@ -68,6 +68,9 @@ function DocumentationConventions.setUp()
 
     DocumentationConventions.atomicTypos = loadAtomicTypos(getTestDirectory() .. DocumentationConventions.atomicTyposFileName)
     DocumentationConventions.aspellDictionary = loadAspellDictionary(getTestDirectory() .. DocumentationConventions.aspellFileName)
+    DocumentationConventions.glossary = fetchGlossary(DocumentationConventions.glossaryServiceUrl)
+    DocumentationConventions.correctWords = fetchCorrectWords(DocumentationConventions.whitelistServiceUrl)
+    DocumentationConventions.incorrectWords = fetchIncorrectWords(DocumentationConventions.blacklistServiceUrl)
 end
 
 
@@ -109,6 +112,67 @@ function readInputFileInJsonFormat(inputFileName)
 end
 
 
+
+--
+-- Fetch correct words from database.
+--
+function fetchGlossary(serviceUrl)
+    local fileName = "glossary.json"
+    local url = serviceUrl .. "json"
+    yap("Reading word whitelist from URL: " .. url)
+    local command = "wget -O " .. fileName .. " " .. url
+    --os.execute(command)
+    local words = readInputFileInJsonFormat(fileName)
+    yap("Read " .. #words .. " words")
+    return words
+end
+
+
+
+--
+-- Fetch correct words from database.
+--
+function fetchCorrectWords(serviceUrl)
+    local url = serviceUrl.. "text"
+    yap("Reading word whitelist from URL: " .. url)
+    local command = "wget -O whitelist.txt " .. url
+    --os.execute(command)
+    local words = {}
+    local cnt = 0
+    for line in io.lines("whitelist.txt") do
+        -- use lowercase words!
+        local word = string.lower(string.trim(line))
+        words[word]=true
+        cnt = cnt + 1
+    end
+    yap("Read " .. cnt .. " words")
+    return words
+end
+
+
+
+--
+-- Fetch incorrect words from database.
+--
+function fetchIncorrectWords(serviceUrl)
+    local url = serviceUrl .. "text"
+    yap("Reading word blacklist from URL: " .. url)
+    local command = "wget -O blacklist.txt " .. url
+    --os.execute(command)
+    local words = {}
+    local cnt = 0
+    for line in io.lines("blacklist.txt") do
+        local i = string.find(line, "\t")
+        if i then
+            local word = string.sub(line, 1, i-1)
+            local description = string.sub(line, i+1)
+            words[word]=description
+            cnt = cnt + 1
+        end
+    end
+    yap("Read " .. cnt .. " words")
+    return words
+end
 
 
 
