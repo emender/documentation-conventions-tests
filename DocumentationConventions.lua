@@ -232,6 +232,68 @@ end
 
 
 
+function spellNumber(number)
+    if number == 0 then
+        return "**never**."
+    elseif number == 1 then
+        return "**once**."
+    elseif number == 2 then
+        return "**twice**."
+    else
+        return "**" .. number .. "** times."
+    end
+end
+
+
+
+function printResults(incorrectWords, withCautionWords)
+    -- Print the result of test.
+    local total = 0
+    for word, count in pairs(incorrectWords) do
+        -- use singular or plural
+        local number = spellNumber(count)
+        total = total + count
+        fail("The word **" .. word .. "** occurred " .. number)
+    end
+    if total == 1 then
+        warn("Found **one** incorrect word!")
+    elseif total > 1 then
+        warn("Found **" .. total .. "** incorrect words!")
+    end
+end
+
+
+
+function isWordForTesting(word)
+    -- special case - don't try to check words containing / character
+    if string.find(word, "/") then
+        return false
+    end
+    -- another special case - ignore uppercase words
+    if string.upper(word) == word then
+        return false
+    end
+    return true
+end
+
+
+
+function registerIncorrectWord(incorrectWords, word)
+    if not incorrectWords[word] then
+        incorrectWords[word] = 1
+    else
+        incorrectWords[word] = incorrectWords[word] + 1
+    end
+end
+
+
+
+function DocumentationConventions:isWhitelistedWord(word)
+    return self.correctWords and self.correctWords[string.lower(word)]
+end
+
+
+
 ---
 --- Tests that a guide does not contain any violations against our word usage guidelines.
 ---
