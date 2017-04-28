@@ -298,5 +298,43 @@ end
 --- Tests that a guide does not contain any violations against our word usage guidelines.
 ---
 function DocumentationConventions.testDocumentationGuidelines()
+    local readableText = DocumentationConventions.readableText
+    if readableText and #readableText > 0 then
+        local readableParts = table.concat(DocumentationConventions.readableText, " ")
+        local incorrectWords = {}
+        local withCautionWords = {}
+        -- Go through readable parts word by word.
+        --for word in readableParts:gmatch("[%w%p-]+") do
+        for word in readableParts:gmatch("[%w%-?]+") do
+            if isWordForTesting(word) then
+           
+                word = string.trimString(word)
+      
+                -- let's not be case sensitive
+                if not DocumentationConventions.aspellDictionary[string.lower(word)] then
+                    -- The word is incorrect.
+                    registerIncorrectWord(incorrectWords, word)
+      
+                    -- Create helpWord variable which is without "'s" at the end of the string.
+                    -- So, we can check for example "API's".
+                    local helpWord = word
+                    if word:match("'s$") then
+                        helpWord = word:gsub("'s$", "")
+                    end
+      
+                    -- words are filtered using aspell, now filter words which are allowed
+                    -- in our database and remove abbreviations according to acrobot database.
+                    -- First our writing style database.
+                    if DocumentationConventions:isWhitelistedWord(word) then
+                        -- Remove words which are correct according to our WritingStyle database.
+                        incorrectWords[word] = nil
+                    end
+                end
+            end
+        end
+        printResults(incorrectWords, withCautionWords)
+    else
+       fail("No readable text found")
+    end
 end
 
