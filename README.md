@@ -2,6 +2,7 @@
 
 ## Summary
 
+Author of atomic_typos.txt is Stephen Wadeley (thanks!)
 
 ## License
 

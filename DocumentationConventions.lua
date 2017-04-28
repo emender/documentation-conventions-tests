@@ -69,6 +69,46 @@ end
 
 
 --
+-- Read input file and return its content as a (possibly long) string.
+--
+function readInputFile(inputFileName)
+
+    -- info for user
+    yap("Reading input file: " .. inputFileName)
+
+    -- open the file
+    local fin = io.open(inputFileName, "r")
+
+    -- read whole contents of the open file
+    local str = fin:read("*all")
+
+    -- current position in file = file size at this point
+    local current = fin:seek()
+    fin:close()
+
+    -- print basic info for user
+    yap("Done. " .. current .. " bytes read.")
+    return str
+end
+
+
+
+--
+-- Read input file and convert data from JSON format to a regular Lua object.
+--
+function readInputFileInJsonFormat(inputFileName)
+    -- read whole file into the string
+    local str = readInputFile(inputFileName)
+    -- and try to parse content of this string as JSON format
+    -- (returned as table of tables...)
+    return json.decode(str, 1, nil)
+end
+
+
+
+
+
+--
 -- Helper function that loads aspell dictionary.
 --
 function loadAspellDictionary(filename)
