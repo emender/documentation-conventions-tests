@@ -161,13 +161,23 @@ function fetchCorrectWords(serviceUrl)
     downloadDataFromService(url, filename)
     local words = {}
     local cnt = 0
-    for line in io.lines(filename) do
+    local fin = io.open(filename, "r")
+    if not fin then
+        fail("Can not open file " .. filename .. " for reading")
+        return {}
+    end
+    for line in fin:lines() do
         -- use lowercase words!
         local word = string.lower(string.trim(line))
         words[word]=true
         cnt = cnt + 1
     end
-    pass("Read " .. cnt .. " words")
+    fin:close()
+    if cnt == 0 then
+        fail("Read zero words, possible error communication with the service")
+    else
+        pass("Read " .. cnt .. " words")
+    end
     return words
 end
 
@@ -182,7 +192,12 @@ function fetchIncorrectWords(serviceUrl)
     downloadDataFromService(url, filename)
     local words = {}
     local cnt = 0
-    for line in io.lines(filename) do
+    local fin = io.open(filename, "r")
+    if not fin then
+        fail("Can not open file " .. filename .. " for reading")
+        return {}
+    end
+    for line in fin:lines(filename) do
         local i = string.find(line, "\t")
         if i then
             local word = string.sub(line, 1, i-1)
@@ -191,7 +206,12 @@ function fetchIncorrectWords(serviceUrl)
             cnt = cnt + 1
         end
     end
-    pass("Read " .. cnt .. " words")
+    fin:close()
+    if cnt == 0 then
+        fail("Read zero words, possible error communication with the service")
+    else
+        pass("Read " .. cnt .. " words")
+    end
     return words
 end
 
