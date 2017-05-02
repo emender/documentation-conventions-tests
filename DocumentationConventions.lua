@@ -86,6 +86,11 @@ function readInputFile(inputFileName)
     -- open the file
     local fin = io.open(inputFileName, "r")
 
+    if not fin then
+       fail("Unable to open file: " .. inputFileName)
+       return nil
+    end
+
     -- read whole contents of the open file
     local str = fin:read("*all")
 
@@ -106,6 +111,11 @@ end
 function readInputFileInJsonFormat(inputFileName)
     -- read whole file into the string
     local str = readInputFile(inputFileName)
+
+    if not str then
+        return nil
+    end
+
     -- and try to parse content of this string as JSON format
     -- (returned as table of tables...)
     return json.decode(str, 1, nil)
@@ -132,7 +142,11 @@ function fetchGlossary(serviceUrl)
     local url = serviceUrl .. "json"
     downloadDataFromService(url, filename)
     local words = readInputFileInJsonFormat(filename)
-    yap("Read " .. #words .. " words")
+    if not words or #words == 0 then
+        fail("Read zero words, possible error communicating with the service")
+    else
+        pass("Read " .. #words .. " words")
+    end
     return words
 end
 
@@ -153,7 +167,7 @@ function fetchCorrectWords(serviceUrl)
         words[word]=true
         cnt = cnt + 1
     end
-    yap("Read " .. cnt .. " words")
+    pass("Read " .. cnt .. " words")
     return words
 end
 
@@ -177,7 +191,7 @@ function fetchIncorrectWords(serviceUrl)
             cnt = cnt + 1
         end
     end
-    yap("Read " .. cnt .. " words")
+    pass("Read " .. cnt .. " words")
     return words
 end
 
