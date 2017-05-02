@@ -114,15 +114,24 @@ end
 
 
 --
+-- Downloads data (glossary, whitelist, blacklist) from the selected service.
+function downloadDataFromService(url, filename)
+    yap("Reading data from URL: " .. url)
+    local command = "wget -O " .. filename .. " " .. url
+    os.execute(command)
+    yap("Downloaded data stored into file: " .. filename)
+end
+
+
+
+--
 -- Fetch correct words from database.
 --
 function fetchGlossary(serviceUrl)
-    local fileName = "glossary.json"
+    local filename = "glossary.json"
     local url = serviceUrl .. "json"
-    yap("Reading word whitelist from URL: " .. url)
-    local command = "wget -O " .. fileName .. " " .. url
-    --os.execute(command)
-    local words = readInputFileInJsonFormat(fileName)
+    downloadDataFromService(url, filename)
+    local words = readInputFileInJsonFormat(filename)
     yap("Read " .. #words .. " words")
     return words
 end
@@ -133,13 +142,12 @@ end
 -- Fetch correct words from database.
 --
 function fetchCorrectWords(serviceUrl)
+    local filename = "whitelist.txt"
     local url = serviceUrl.. "text"
-    yap("Reading word whitelist from URL: " .. url)
-    local command = "wget -O whitelist.txt " .. url
-    --os.execute(command)
+    downloadDataFromService(url, filename)
     local words = {}
     local cnt = 0
-    for line in io.lines("whitelist.txt") do
+    for line in io.lines(filename) do
         -- use lowercase words!
         local word = string.lower(string.trim(line))
         words[word]=true
@@ -155,13 +163,12 @@ end
 -- Fetch incorrect words from database.
 --
 function fetchIncorrectWords(serviceUrl)
+    local filename = "blacklist.txt"
     local url = serviceUrl .. "text"
-    yap("Reading word blacklist from URL: " .. url)
-    local command = "wget -O blacklist.txt " .. url
-    --os.execute(command)
+    downloadDataFromService(url, filename)
     local words = {}
     local cnt = 0
-    for line in io.lines("blacklist.txt") do
+    for line in io.lines(filename) do
         local i = string.find(line, "\t")
         if i then
             local word = string.sub(line, 1, i-1)
