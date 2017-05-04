@@ -354,6 +354,12 @@ end
 
 
 
+function DocumentationConventions:isWordInAspell(word)
+    return self.aspellDictionary[string.lower(word)] 
+end
+
+
+
 ---
 --- Tests that a guide does not contain any violations against our word usage guidelines.
 ---
@@ -370,9 +376,12 @@ function DocumentationConventions.testDocumentationGuidelines()
                 word = string.trimString(word)
       
                 -- let's not be case sensitive
-                if not DocumentationConventions.aspellDictionary[string.lower(word)] then
-                    -- The word is incorrect.
-                    registerIncorrectWord(incorrectWords, word)
+                if not DocumentationConventions:isWordInAspell(word) then
+                    -- The word can not be found in aspell, se let's check if it is in the internal whitelist or Glossary
+                    -- First our writing style database.
+                    if not DocumentationConventions:isWhitelistedWord(word) then
+                        registerIncorrectWord(incorrectWords, word)
+                    end
       
                     -- Create helpWord variable which is without "'s" at the end of the string.
                     -- So, we can check for example "API's".
@@ -382,12 +391,6 @@ function DocumentationConventions.testDocumentationGuidelines()
                     end
       
                     -- words are filtered using aspell, now filter words which are allowed
-                    -- in our database and remove abbreviations according to acrobot database.
-                    -- First our writing style database.
-                    if DocumentationConventions:isWhitelistedWord(word) then
-                        -- Remove words which are correct according to our WritingStyle database.
-                        incorrectWords[word] = nil
-                    end
                 end
             end
         end
