@@ -153,6 +153,19 @@ end
 
 
 --
+-- Check if any word has been loaded.
+--
+function checkWordCount(cnt)
+    if cnt == 0 then
+        fail("Read zero words, possible error communication with the service")
+    else
+        pass("Read " .. cnt .. " words")
+    end
+end
+
+
+
+--
 -- Fetch correct words from database.
 --
 function fetchCorrectWords(serviceUrl)
@@ -173,11 +186,7 @@ function fetchCorrectWords(serviceUrl)
         cnt = cnt + 1
     end
     fin:close()
-    if cnt == 0 then
-        fail("Read zero words, possible error communication with the service")
-    else
-        pass("Read " .. cnt .. " words")
-    end
+    checkWordCount(cnt)
     return words
 end
 
@@ -197,7 +206,7 @@ function fetchIncorrectWords(serviceUrl)
         fail("Can not open file " .. filename .. " for reading")
         return {}
     end
-    for line in fin:lines(filename) do
+    for line in fin:lines() do
         local i = string.find(line, "\t")
         if i then
             local word = string.sub(line, 1, i-1)
@@ -207,11 +216,7 @@ function fetchIncorrectWords(serviceUrl)
         end
     end
     fin:close()
-    if cnt == 0 then
-        fail("Read zero words, possible error communication with the service")
-    else
-        pass("Read " .. cnt .. " words")
-    end
+    checkWordCount(cnt)
     return words
 end
 
@@ -223,13 +228,20 @@ end
 function loadAspellDictionary(filename)
     local words = {}
     local cnt = 0
-    for line in io.lines(filename) do
+    yap("Reading aspell dictionary from " .. filename)
+    local fin = io.open(filename, "r")
+    if not fin then
+        fail("Can not open file " .. filename .. " for reading")
+        return {}
+    end
+    for line in fin:lines() do
         if line ~= "" then
             words[string.lower(line)] = true
             cnt = cnt + 1
         end
     end
-    pass("Aspell dictionary: " .. cnt .. " words")
+    fin:close()
+    checkWordCount(cnt)
     return words
 end
 
@@ -241,7 +253,13 @@ end
 function loadAtomicTypos(filename)
     local words = {}
     local cnt = 0
-    for line in io.lines(filename) do
+    yap("Reading atomic typos from " .. filename)
+    local fin = io.open(filename, "r")
+    if not fin then
+        fail("Can not open file " .. filename .. " for reading")
+        return {}
+    end
+    for line in fin:lines() do
         local i = string.find(line, "->")
         if i then
             local key = string.sub(line, 1, i-1)
@@ -250,7 +268,8 @@ function loadAtomicTypos(filename)
             cnt = cnt + 1
         end
     end
-    pass("Atomic typos: " .. cnt .. " words")
+    fin:close()
+    checkWordCount(cnt)
     return words
 end
 
@@ -348,7 +367,6 @@ function DocumentationConventions.testDocumentationGuidelines()
         --for word in readableParts:gmatch("[%w%p-]+") do
         for word in readableParts:gmatch("[%w%-?]+") do
             if isWordForTesting(word) then
-           
                 word = string.trimString(word)
       
                 -- let's not be case sensitive
