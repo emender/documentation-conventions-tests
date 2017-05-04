@@ -69,11 +69,36 @@ function DocumentationConventions.setUp()
     DocumentationConventions.atomicTypos = loadAtomicTypos(getTestDirectory() .. DocumentationConventions.atomicTyposFileName)
     DocumentationConventions.aspellDictionary = loadAspellDictionary(getTestDirectory() .. DocumentationConventions.aspellFileName)
     DocumentationConventions.glossary = fetchGlossary(DocumentationConventions.glossaryServiceUrl)
+    DocumentationConventions.glossaryCorrectWords = correctWordsFromGlossary(DocumentationConventions.glossary)
+    DocumentationConventions.glossaryIncorrectWords = incorrectWordsFromGlossary(DocumentationConventions.glossary)
+    DocumentationConventions.glossaryWithCautionWords = withCautionWordsFromGlossary(DocumentationConventions.glossary)
     DocumentationConventions.correctWords = fetchCorrectWords(DocumentationConventions.whitelistServiceUrl)
     DocumentationConventions.incorrectWords = fetchIncorrectWords(DocumentationConventions.blacklistServiceUrl)
 end
 
 
+
+function filterGlossary(glossary, useValue)
+    local terms = {}
+    for _,term in ipairs(glossary) do
+        if term.use == useValue then
+            terms[term.word] = term
+        end
+    end
+    return terms
+end
+
+function correctWordsFromGlossary(glossary)
+    return filterGlossary(glossary, 1)
+end
+
+function incorrectWordsFromGlossary(glossary)
+    return filterGlossary(glossary, 0)
+end
+
+function withCautionWordsFromGlossary(glossary)
+    return filterGlossary(glossary, 2)
+end
 
 --
 -- Read input file and return its content as a (possibly long) string.
