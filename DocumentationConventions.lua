@@ -376,11 +376,9 @@ end
 --
 -- Print incorrect words
 --
-function printIncorrectWords(incorrectWords, withCautionWords)
-    -- Print the result of test.
-    local total = 0
+function printIncorrectWords(incorrectWords)
     for word, count in pairs(incorrectWords) do
-        fail("The spell checker marked the word **" .. word .. "** as incorrect. **Recommended action**: if this word is correct, add it to the CCS Custom Dictionary or update the Glossary of Terms and Conventions for Product Documentation.")
+        fail("The spell checker marked the word **" .. word .. "** as incorrect. **Recommended Action**: if this word is correct, add it to the CCS Custom Dictionary or update the Glossary of Terms and Conventions for Product Documentation.")
     end
 end
 
@@ -403,30 +401,60 @@ end
 
 
 
-function registerIncorrectWord(incorrectWords, word)
-    if not incorrectWords[word] then
-        incorrectWords[word] = 1
+function registerWord(wordlist, word)
+    if not wordlist[word] then
+        wordlist[word] = 1
     else
-        incorrectWords[word] = incorrectWords[word] + 1
+        wordlist[word] = wordlist[word] + 1
     end
 end
 
 
 
+function wordInTable(tbl, word)
+    return tbl and tbl[word]
+end
+
+function readWordFromTable(tbl, word)
+    if tbl then
+        return tbl[word]
+    else
+        return nil
+    end
+end
+
 function DocumentationConventions:isWhitelistedWord(word)
-    return self.correctWords and self.correctWords[string.lower(word)]
+    return wordInTable(self.correctWords, string.lower(word))
+end
+
+
+
+function DocumentationConventions:isBlacklistedWord(word)
+    return wordInTable(self.incorrectWords, string.lower(word))
 end
 
 
 
 function DocumentationConventions:isWordInAspell(word)
-    return self.aspellDictionary[string.lower(word)] 
+    return wordInTable(self.aspellDictionary, string.lower(word))
 end
 
 
 
 function DocumentationConventions:isGlossaryCorrectWord(word)
-    return self.glossaryCorrectWords and self.glossaryCorrectWords[word]
+    return wordInTable(self.glossaryCorrectWords, word)
+end
+
+
+
+function DocumentationConventions:getGlossaryIncorrectWord(word)
+    return readWordFromTable(self.glossaryIncorrectWords, word)
+end
+
+
+
+function DocumentationConventions:getGlossaryWithCautionWord(word)
+    return readWordFromTable(self.glossaryWithCautionWords, word)
 end
 
 
@@ -439,7 +467,6 @@ function DocumentationConventions.testDocumentationGuidelines()
     if readableText and #readableText > 0 then
         local readableParts = table.concat(DocumentationConventions.readableText, " ")
         local incorrectWords = {}
-        local withCautionWords = {}
         -- Go through readable parts word by word.
         --for word in readableParts:gmatch("[%w%p-]+") do
         for word in readableParts:gmatch("[%w%-?]+") do
@@ -452,7 +479,7 @@ function DocumentationConventions.testDocumentationGuidelines()
                     -- First our writing style database and the whitelist.
                     if not DocumentationConventions:isWhitelistedWord(word) and
                        not DocumentationConventions:isGlossaryCorrectWord(word) then
-                        registerIncorrectWord(incorrectWords, word)
+                        registerWord(incorrectWords, word)
                     end
       
                     -- Create helpWord variable which is without "'s" at the end of the string.
@@ -461,11 +488,26 @@ function DocumentationConventions.testDocumentationGuidelines()
                     if word:match("'s$") then
                         helpWord = word:gsub("'s$", "")
                     end
-                    -- words are filtered using aspell, now filter words which are allowed
+                end
+                local blacklistedWord = DocumentationConventions:isBlacklistedWord(word)
+                local glossaryIncorrectWord = DocumentationConventions:getGlossaryIncorrectWord(word)
+                local glossaryWithCautionWords = DocumentationConventions:getGlossaryWithCautionWord(word)
+                if glossaryIncorrectWord then
+                    local message = "The word **" .. word .. "** does not comply with our guidelines. **Explanation**: " .. glossaryIncorrectWord.description
+                    if glossaryIncorrectWord.correct_forms ~= "" then
+                        message = message .. " **Recommended Action**: use " .. glossaryIncorrectWord.correct_forms
+                    end
+                    --fail(message)
+                elseif blacklistedWord then
+                    --fail("The word **" .. word .. "** does not comply with our guidelines. Please look into CCS Blacklist database.")
+                end
+                if glossaryWithCautionWords then
+                    local message = "Use the word **" .. word .. "** with caution. **Explanation**: " .. glossaryWithCautionWords.description .. " **Recommended Action**: Verify if the word is used correctly by reading the whole sentence and correct the sentence as necessary. If the word is used correctly, mark it as reviewed in the waiving system."
+                    warn(message)
                 end
             end
         end
-        printIncorrectWords(incorrectWords, withCautionWords)
+        printIncorrectWords(incorrectWords)
     else
        fail("No readable text found")
     end
