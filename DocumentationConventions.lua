@@ -78,6 +78,10 @@ end
 
 
 
+--
+-- Filter termns from the Glossary that have the use-it value set to specified constant
+-- (use it, don't use, use with caution)
+--
 function filterGlossary(glossary, useValue)
     local terms = {}
     for _,term in ipairs(glossary) do
@@ -88,17 +92,34 @@ function filterGlossary(glossary, useValue)
     return terms
 end
 
+
+
+--
+-- Returns a table with all correct words read from the Glossary
+--
 function correctWordsFromGlossary(glossary)
     return filterGlossary(glossary, 1)
 end
 
+
+
+--
+-- Returns a table with all incorrect words read from the Glossary
+--
 function incorrectWordsFromGlossary(glossary)
     return filterGlossary(glossary, 0)
 end
 
+
+
+--
+-- Returns a table with all words read from the Glossary that should be used with caution
+--
 function withCautionWordsFromGlossary(glossary)
     return filterGlossary(glossary, 2)
 end
+
+
 
 --
 -- Read input file and return its content as a (possibly long) string.
@@ -331,6 +352,9 @@ end
 
 
 
+--
+-- Print overall test results
+--
 function printResults(incorrectWords, withCautionWords)
     -- Print the result of test.
     local total = 0
@@ -349,6 +373,22 @@ end
 
 
 
+--
+-- Print incorrect words
+--
+function printIncorrectWords(incorrectWords, withCautionWords)
+    -- Print the result of test.
+    local total = 0
+    for word, count in pairs(incorrectWords) do
+        fail("The spell checker marked the word **" .. word .. "** as incorrect. **Recommended action**: if this word is correct, add it to the CCS Custom Dictionary or update the Glossary of Terms and Conventions for Product Documentation.")
+    end
+end
+
+
+
+--
+-- Check if the word should be tested or not
+--
 function isWordForTesting(word)
     -- special case - don't try to check words containing / character
     if string.find(word, "/") then
@@ -385,6 +425,12 @@ end
 
 
 
+function DocumentationConventions:isGlossaryCorrectWord(word)
+    return self.glossaryCorrectWords and self.glossaryCorrectWords[word]
+end
+
+
+
 ---
 --- Tests that a guide does not contain any violations against our word usage guidelines.
 ---
@@ -403,8 +449,9 @@ function DocumentationConventions.testDocumentationGuidelines()
                 -- let's not be case sensitive
                 if not DocumentationConventions:isWordInAspell(word) then
                     -- The word can not be found in aspell, se let's check if it is in the internal whitelist or Glossary
-                    -- First our writing style database.
-                    if not DocumentationConventions:isWhitelistedWord(word) then
+                    -- First our writing style database and the whitelist.
+                    if not DocumentationConventions:isWhitelistedWord(word) and
+                       not DocumentationConventions:isGlossaryCorrectWord(word) then
                         registerIncorrectWord(incorrectWords, word)
                     end
       
@@ -414,12 +461,11 @@ function DocumentationConventions.testDocumentationGuidelines()
                     if word:match("'s$") then
                         helpWord = word:gsub("'s$", "")
                     end
-      
                     -- words are filtered using aspell, now filter words which are allowed
                 end
             end
         end
-        printResults(incorrectWords, withCautionWords)
+        printIncorrectWords(incorrectWords, withCautionWords)
     else
        fail("No readable text found")
     end
