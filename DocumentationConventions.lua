@@ -459,6 +459,48 @@ end
 
 
 
+--
+-- Check one word for any problems
+--
+function DocumentationConventions:checkWord(incorrectWords, word)
+    word = string.trimString(word)
+
+    -- let's not be case sensitive
+    if not DocumentationConventions:isWordInAspell(word) then
+        -- The word can not be found in aspell, se let's check if it is in the internal whitelist or Glossary
+        -- First our writing style database and the whitelist.
+        if not DocumentationConventions:isWhitelistedWord(word) and
+           not DocumentationConventions:isGlossaryCorrectWord(word) then
+            registerWord(incorrectWords, word)
+        end
+
+        -- Create helpWord variable which is without "'s" at the end of the string.
+        -- So, we can check for example "API's".
+        local helpWord = word
+        if word:match("'s$") then
+            helpWord = word:gsub("'s$", "")
+        end
+    end
+    local blacklistedWord = DocumentationConventions:isBlacklistedWord(word)
+    local glossaryIncorrectWord = DocumentationConventions:getGlossaryIncorrectWord(word)
+    local glossaryWithCautionWords = DocumentationConventions:getGlossaryWithCautionWord(word)
+    if glossaryIncorrectWord then
+        local message = "The word **" .. word .. "** does not comply with our guidelines. **Explanation**: " .. glossaryIncorrectWord.description
+        if glossaryIncorrectWord.correct_forms ~= "" then
+            message = message .. " **Recommended Action**: use " .. glossaryIncorrectWord.correct_forms
+        end
+        --fail(message)
+    elseif blacklistedWord then
+        --fail("The word **" .. word .. "** does not comply with our guidelines. Please look into CCS Blacklist database.")
+    end
+    if glossaryWithCautionWords then
+        local message = "Use the word **" .. word .. "** with caution. **Explanation**: " .. glossaryWithCautionWords.description .. " **Recommended Action**: Verify if the word is used correctly by reading the whole sentence and correct the sentence as necessary. If the word is used correctly, mark it as reviewed in the waiving system."
+        warn(message)
+    end
+end
+
+
+
 ---
 --- Tests that a guide does not contain any violations against our word usage guidelines.
 ---
@@ -471,40 +513,7 @@ function DocumentationConventions.testDocumentationGuidelines()
         --for word in readableParts:gmatch("[%w%p-]+") do
         for word in readableParts:gmatch("[%w%-?]+") do
             if isWordForTesting(word) then
-                word = string.trimString(word)
-      
-                -- let's not be case sensitive
-                if not DocumentationConventions:isWordInAspell(word) then
-                    -- The word can not be found in aspell, se let's check if it is in the internal whitelist or Glossary
-                    -- First our writing style database and the whitelist.
-                    if not DocumentationConventions:isWhitelistedWord(word) and
-                       not DocumentationConventions:isGlossaryCorrectWord(word) then
-                        registerWord(incorrectWords, word)
-                    end
-      
-                    -- Create helpWord variable which is without "'s" at the end of the string.
-                    -- So, we can check for example "API's".
-                    local helpWord = word
-                    if word:match("'s$") then
-                        helpWord = word:gsub("'s$", "")
-                    end
-                end
-                local blacklistedWord = DocumentationConventions:isBlacklistedWord(word)
-                local glossaryIncorrectWord = DocumentationConventions:getGlossaryIncorrectWord(word)
-                local glossaryWithCautionWords = DocumentationConventions:getGlossaryWithCautionWord(word)
-                if glossaryIncorrectWord then
-                    local message = "The word **" .. word .. "** does not comply with our guidelines. **Explanation**: " .. glossaryIncorrectWord.description
-                    if glossaryIncorrectWord.correct_forms ~= "" then
-                        message = message .. " **Recommended Action**: use " .. glossaryIncorrectWord.correct_forms
-                    end
-                    --fail(message)
-                elseif blacklistedWord then
-                    --fail("The word **" .. word .. "** does not comply with our guidelines. Please look into CCS Blacklist database.")
-                end
-                if glossaryWithCautionWords then
-                    local message = "Use the word **" .. word .. "** with caution. **Explanation**: " .. glossaryWithCautionWords.description .. " **Recommended Action**: Verify if the word is used correctly by reading the whole sentence and correct the sentence as necessary. If the word is used correctly, mark it as reviewed in the waiving system."
-                    warn(message)
-                end
+                DocumentationConventions:checkWord(incorrectWords, word)
             end
         end
         printIncorrectWords(incorrectWords)
