@@ -543,13 +543,28 @@ end
 
 
 
+--
+-- Try to read word source from the glossary
+--
+function DocumentationConventions:getWordSource(word)
+    for _, term in ipairs(self.glossary) do
+        if term.word == word then
+            return term.source_name
+        end
+    end
+    return "unknown"
+end
+
+
+
 function DocumentationConventions:checkAtomicTyposAndWordsWithDifferentSpelling(readableParts)
      local words = getWordList(readableParts)
      for i = 1, #words do
          local wordp2, wordp1, word, wordn1, wordn2 = unpack(words, i-2)
          if self.differentSpellingWords[word] then
+            local source = self:getWordSource(word)
             local context = (wordp2 or "") .. " " .. (wordp1 or "") .. " " .. word .. " " .. (wordn1 or "") .. " " .. (wordn2 or "")
-            local expanation = "**Explanation**: The correct usage of this word depends on the word's part of speech."
+            local expanation = "**Explanation**: The correct usage of this word depends on the word's part of speech. See the " .. source .. " for details. "
             local action = "**Recommended Action**: Verify if the word is used correctly by reading the whole sentence and correct the sentence as necessary. If the word is used correctly, mark it as reviewed in the waiving system."
             warn("The word **" .. word .. "** might have different spelling in '" .. context .. "' " .. expanation .. " " .. action)
          end
