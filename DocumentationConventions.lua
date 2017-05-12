@@ -466,11 +466,11 @@ function DocumentationConventions:checkWord(incorrectWords, word)
     word = string.trimString(word)
 
     -- let's not be case sensitive
-    if not DocumentationConventions:isWordInAspell(word) then
+    if not self:isWordInAspell(word) then
         -- The word can not be found in aspell, se let's check if it is in the internal whitelist or Glossary
         -- First our writing style database and the whitelist.
-        if not DocumentationConventions:isWhitelistedWord(word) and
-           not DocumentationConventions:isGlossaryCorrectWord(word) then
+        if not self:isWhitelistedWord(word) and
+           not self:isGlossaryCorrectWord(word) then
             registerWord(incorrectWords, word)
         end
 
@@ -481,9 +481,9 @@ function DocumentationConventions:checkWord(incorrectWords, word)
             helpWord = word:gsub("'s$", "")
         end
     end
-    local blacklistedWord = DocumentationConventions:isBlacklistedWord(word)
-    local glossaryIncorrectWord = DocumentationConventions:getGlossaryIncorrectWord(word)
-    local glossaryWithCautionWords = DocumentationConventions:getGlossaryWithCautionWord(word)
+    local blacklistedWord = self:isBlacklistedWord(word)
+    local glossaryIncorrectWord = self:getGlossaryIncorrectWord(word)
+    local glossaryWithCautionWords = self:getGlossaryWithCautionWord(word)
     if glossaryIncorrectWord then
         local message = "The word **" .. word .. "** does not comply with our guidelines. **Explanation**: " .. glossaryIncorrectWord.description
         if glossaryIncorrectWord.correct_forms ~= "" then
