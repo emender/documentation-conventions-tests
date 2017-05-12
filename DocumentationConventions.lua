@@ -72,6 +72,7 @@ function DocumentationConventions.setUp()
     DocumentationConventions.glossaryCorrectWords = correctWordsFromGlossary(DocumentationConventions.glossary)
     DocumentationConventions.glossaryIncorrectWords = incorrectWordsFromGlossary(DocumentationConventions.glossary)
     DocumentationConventions.glossaryWithCautionWords = withCautionWordsFromGlossary(DocumentationConventions.glossary)
+    DocumentationConventions.differentSpellingWords = fetchDifferentSpellingWords(DocumentationConventions.differentSpellingWordsServiceUrl)
     DocumentationConventions.correctWords = fetchCorrectWords(DocumentationConventions.whitelistServiceUrl)
     DocumentationConventions.incorrectWords = fetchIncorrectWords(DocumentationConventions.blacklistServiceUrl)
 end
@@ -193,6 +194,20 @@ function fetchGlossary(serviceUrl)
     else
         pass("Read " .. #words .. " words")
     end
+    return words
+end
+
+
+
+--
+-- Fetch different spelling words from the service.
+--
+function fetchDifferentSpellingWords(serviceUrl)
+    local filename = "different_spelling_words.json"
+    local url = serviceUrl .. "json"
+    downloadDataFromService(url, filename)
+    local words = readInputFileInJsonFormat(filename)
+    print(#words)
     return words
 end
 
