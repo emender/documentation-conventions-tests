@@ -501,13 +501,33 @@ end
 
 
 
+function getWordList(readableParts)
+    local words = {}
+    for word in readableParts:gmatch("[%w%p-]+") do
+        table.insert(words, word)
+    end
+    return words
+end
+
+
+
+function DocumentationConventions:checkAtomicTypos(readableParts)
+     local words = getWordList(readableParts)
+     for i = 1, #words do
+         local wordp2, wordp1, word, wordn1, wordn2 = unpack(words, i-2)
+         print(wordp2, wordp1, word, wordn1, wordn2)
+     end
+end
+
+
+
 ---
 --- Tests that a guide does not contain any violations against our word usage guidelines.
 ---
 function DocumentationConventions.testDocumentationGuidelines()
     local readableText = DocumentationConventions.readableText
     if readableText and #readableText > 0 then
-        local readableParts = table.concat(DocumentationConventions.readableText, " ")
+        local readableParts = table.concat(readableText, " ")
         local incorrectWords = {}
         -- Go through readable parts word by word.
         --for word in readableParts:gmatch("[%w%p-]+") do
@@ -517,6 +537,7 @@ function DocumentationConventions.testDocumentationGuidelines()
             end
         end
         printIncorrectWords(incorrectWords)
+        DocumentationConventions:checkAtomicTypos(readableParts)
     else
        fail("No readable text found")
     end
