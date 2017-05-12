@@ -206,8 +206,12 @@ function fetchDifferentSpellingWords(serviceUrl)
     local filename = "different_spelling_words.json"
     local url = serviceUrl .. "json"
     downloadDataFromService(url, filename)
-    local words = readInputFileInJsonFormat(filename)
-    print(#words)
+    local terms = readInputFileInJsonFormat(filename)
+    pass("Read " .. #terms .. " terms")
+    local words = {}
+    for _,term in ipairs(terms) do
+        words[term.word] = true
+    end
     return words
 end
 
@@ -543,6 +547,12 @@ function DocumentationConventions:checkAtomicTyposAndWordsWithDifferentSpelling(
      local words = getWordList(readableParts)
      for i = 1, #words do
          local wordp2, wordp1, word, wordn1, wordn2 = unpack(words, i-2)
+         if self.differentSpellingWords[word] then
+            local context = (wordp2 or "") .. " " .. (wordp1 or "") .. " " .. word .. " " .. (wordn1 or "") .. " " .. (wordn2 or "")
+            local expanation = "**Explanation**: The correct usage of this word depends on the word's part of speech."
+            local action = "**Recommended Action**: Verify if the word is used correctly by reading the whole sentence and correct the sentence as necessary. If the word is used correctly, mark it as reviewed in the waiving system."
+            warn("The word **" .. word .. "** might have different spelling in '" .. context .. "' " .. expanation .. " " .. action)
+         end
      end
 end
 
