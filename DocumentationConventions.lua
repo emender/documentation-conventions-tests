@@ -511,11 +511,23 @@ end
 
 
 
-function DocumentationConventions:checkAtomicTypos(readableParts)
+function DocumentationConventions:checkAllWords(readableParts)
+    local incorrectWords = {}
+    -- Go through readable parts word by word.
+    for word in readableParts:gmatch("[%w%-?]+") do
+        if isWordForTesting(word) then
+            DocumentationConventions:checkWord(incorrectWords, word)
+        end
+    end
+    return incorrectWords
+end
+
+
+
+function DocumentationConventions:checkAtomicTyposAndWordsWithDifferentSpelling(readableParts)
      local words = getWordList(readableParts)
      for i = 1, #words do
          local wordp2, wordp1, word, wordn1, wordn2 = unpack(words, i-2)
-         print(wordp2, wordp1, word, wordn1, wordn2)
      end
 end
 
@@ -528,16 +540,9 @@ function DocumentationConventions.testDocumentationGuidelines()
     local readableText = DocumentationConventions.readableText
     if readableText and #readableText > 0 then
         local readableParts = table.concat(readableText, " ")
-        local incorrectWords = {}
-        -- Go through readable parts word by word.
-        --for word in readableParts:gmatch("[%w%p-]+") do
-        for word in readableParts:gmatch("[%w%-?]+") do
-            if isWordForTesting(word) then
-                DocumentationConventions:checkWord(incorrectWords, word)
-            end
-        end
+        local incorrectWords = DocumentationConventions:checkAllWords(readableParts)
         printIncorrectWords(incorrectWords)
-        DocumentationConventions:checkAtomicTypos(readableParts)
+        DocumentationConventions:checkAtomicTyposAndWordsWithDifferentSpelling(readableParts)
     else
        fail("No readable text found")
     end
