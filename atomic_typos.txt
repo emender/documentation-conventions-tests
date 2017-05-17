@@ -24,3 +24,4 @@ noone->no one
 tree steps->three steps
 sever->server
 next to teach->next to each
+be default->by default
