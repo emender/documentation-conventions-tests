@@ -78,6 +78,7 @@ function DocumentationConventions.setUp()
     DocumentationConventions.incorrectWords = fetchIncorrectWords(DocumentationConventions.blacklistServiceUrl)
     DocumentationConventions.format = loadFormatInfo()
     DocumentationConventions.workDirectory = loadWorkDirectory()
+    DocumentationConventions.masterDirectory = loadMasterDirectory()
 end
 
 
@@ -316,6 +317,22 @@ function loadWorkDirectory()
         return input[1]
     else
         fail("Can not read source directory from file results.cwd")
+        return nil
+    end
+end
+
+
+
+--
+-- Load information about the directory with the master file
+--
+function loadMasterDirectory()
+    local input = slurpTable("results.master")
+    if correctInput(input) then
+        pass("Master directory: " .. input[1])
+        return input[1]
+    else
+        fail("Can not read master directory from file results.master")
         return nil
     end
 end
