@@ -76,6 +76,7 @@ function DocumentationConventions.setUp()
     DocumentationConventions.differentSpellingWords = fetchDifferentSpellingWords(DocumentationConventions.differentSpellingWordsServiceUrl)
     DocumentationConventions.correctWords = fetchCorrectWords(DocumentationConventions.whitelistServiceUrl)
     DocumentationConventions.incorrectWords = fetchIncorrectWords(DocumentationConventions.blacklistServiceUrl)
+    DocumentationConventions.format = loadFormatInfo()
 end
 
 
@@ -284,6 +285,22 @@ function fetchIncorrectWords(serviceUrl)
     fin:close()
     checkWordCount(cnt)
     return words
+end
+
+
+
+--
+-- Load information about the format of book
+--
+function loadFormatInfo()
+    local input = slurpTable("results.format")
+    if correctInput(input) then
+        pass("Input format: " .. input[1])
+        return input[1]
+    else
+        fail("Can not read input format from the file results.format")
+        return nil
+    end
 end
 
 
