@@ -79,6 +79,7 @@ function DocumentationConventions.setUp()
     DocumentationConventions.format = loadFormatInfo()
     DocumentationConventions.workDirectory = loadWorkDirectory()
     DocumentationConventions.masterDirectory = loadMasterDirectory()
+    DocumentationConventions.includeFiles = loadListOfIncludeFiles()
 end
 
 
@@ -287,6 +288,33 @@ function fetchIncorrectWords(serviceUrl)
     fin:close()
     checkWordCount(cnt)
     return words
+end
+
+
+
+--
+-- Loads list of included files from the file results.includes
+--
+function loadListOfIncludeFiles()
+    local list = {}
+    local fin = io.open("results.includes", "r")
+
+    if fin then
+        local prefix = "Found an include:"
+        for line in fin:lines() do
+            if line:startsWith(prefix) then
+                filename = line:sub(1+prefix:len()):trim()
+                pass("Included file: " .. filename)
+                table.insert(list, filename)
+            end
+        end
+
+        fin:close()
+        return list
+    else
+        warn("Can not read list of included files from the file results.include")
+        return {}
+    end
 end
 
 
