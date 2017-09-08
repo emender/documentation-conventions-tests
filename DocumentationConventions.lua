@@ -77,6 +77,7 @@ function DocumentationConventions.setUp()
     DocumentationConventions.correctWords = fetchCorrectWords(DocumentationConventions.whitelistServiceUrl)
     DocumentationConventions.incorrectWords = fetchIncorrectWords(DocumentationConventions.blacklistServiceUrl)
     DocumentationConventions.format = loadFormatInfo()
+    DocumentationConventions.workDirectory = loadWorkDirectory()
 end
 
 
@@ -299,6 +300,22 @@ function loadFormatInfo()
         return input[1]
     else
         fail("Can not read input format from the file results.format")
+        return nil
+    end
+end
+
+
+
+--
+-- Load information about the work directory
+--
+function loadWorkDirectory()
+    local input = slurpTable("results.cwd")
+    if correctInput(input) then
+        pass("Work directory: " .. input[1])
+        return input[1]
+    else
+        fail("Can not read source directory from file results.cwd")
         return nil
     end
 end
