@@ -319,6 +319,11 @@ end
 
 
 
+function correctInput(input)
+    return input and #input >= 1
+end
+
+
 --
 -- Load information about the format of book
 --
