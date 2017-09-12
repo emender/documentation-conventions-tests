@@ -477,6 +477,40 @@ end
 
 
 
+function performGrep(word, path, filename, workDir)
+    local regexp1 = "\\W" .. word .. "\\W"
+    local regexp2 = "^" .. word .. "\\W"
+    local regexp3 = "\\W" .. word .. "$"
+    local regexp4 = "^" .. word .. "$"
+    local ror = "\\|"
+    local path = "`realpath --relative-to='" .. workDir .. "' " .. path .. "/" .. filename .. "`"
+    --print(path)
+
+    local cmd = "grep -n -H '" .. regexp1 .. ror .. regexp2 .. ror .. regexp3 .. ror .. regexp4 .. "' " .. path
+
+    return execCaptureOutputAsTable(cmd)
+end
+
+
+
+function DocumentationConventions:getFilelistForWord(word)
+    local path = self.masterDirectory
+    local all_matches = {}
+
+    local matches = performGrep(word, path, "master.adoc", self.workDirectory)
+
+    all_matches = table.appendTables(all_matches, matches)
+
+    for _, includedFile in ipairs(self.includeFiles) do
+        local matches = performGrep(word, path, includedFile, self.workDirectory)
+        all_matches = table.appendTables(all_matches, matches)
+    end
+
+    return all_matches
+end
+
+
+
 --
 -- Print incorrect words
 --
