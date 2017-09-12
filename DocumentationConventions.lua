@@ -514,9 +514,19 @@ end
 --
 -- Print incorrect words
 --
-function printIncorrectWords(incorrectWords)
+function DocumentationConventions:printIncorrectWords(incorrectWords)
     for word, count in pairs(incorrectWords) do
         fail("The spell checker marked the word **" .. word .. "** as incorrect. **Recommended Action**: if this word is correct, add it to the CCS Custom Dictionary or update the Glossary of Terms and Conventions for Product Documentation.")
+        local filelist = DocumentationConventions:getFilelistForWord(word)
+        if #filelist == 1 then
+            warn("This word can be found in the following file:")
+        else
+            warn("This word can be found in the following files:")
+        end
+        for _, filematch in ipairs(filelist) do
+            --print(filematch)
+            warn(filematch)
+        end
     end
 end
 
@@ -553,6 +563,8 @@ function wordInTable(tbl, word)
     return tbl and tbl[word]
 end
 
+
+
 function readWordFromTable(tbl, word)
     if tbl then
         return tbl[word]
@@ -560,6 +572,8 @@ function readWordFromTable(tbl, word)
         return nil
     end
 end
+
+
 
 function DocumentationConventions:isWhitelistedWord(word)
     return wordInTable(self.correctWords, string.lower(word))
