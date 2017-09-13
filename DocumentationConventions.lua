@@ -714,7 +714,7 @@ function DocumentationConventions.testDocumentationGuidelines()
     if readableText and #readableText > 0 then
         local readableParts = table.concat(readableText, " ")
         local incorrectWords = DocumentationConventions:checkAllWords(readableParts)
-        printIncorrectWords(incorrectWords)
+        DocumentationConventions:printIncorrectWords(incorrectWords)
     else
        fail("No readable text found")
     end
