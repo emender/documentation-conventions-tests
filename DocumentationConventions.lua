@@ -30,6 +30,7 @@ DocumentationConventions = {
     atomicTyposFileName = "atomic_typos.txt",
     tagsWithReadableText = {"para"},
     admonitions = {"note", "warning", "important"},
+    -- TODO: the following settings needs to be read from the test environment
     whitelistServiceUrl = "glossary.service.org:3000/whitelist/",
     blacklistServiceUrl = "glossary.service.org:3000/blacklist/",
     glossaryServiceUrl = "glossary.service.org:3000/glossary/",
