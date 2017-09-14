@@ -39,10 +39,23 @@ DocumentationConventions = {
 
 
 
+function checkTestOption(option, name)
+    if option == nil then
+        fail("The service URL " .. name .. " is not specified, but it is required by this test")
+    end
+end
+
+
+
 --
 --- Function which runs first. This is place where all objects are created.
 --
 function DocumentationConventions.setUp()
+    checkTestOption(DocumentationConventions.whitelistServiceUrl, "whiteListServiceUrl")
+    checkTestOption(DocumentationConventions.blacklistServiceUrl, "blacklistServiceUrl")
+    checkTestOption(DocumentationConventions.glossaryServiceUrl, "glossaryServiceUrl")
+    checkTestOption(DocumentationConventions.differentSpellingWordsServiceUrl, "differentSpellingWordsServiceUrl")
+
     dofile(getScriptDirectory() .. "lib/xml.lua")
     dofile(getScriptDirectory() .. "lib/publican.lua")
     dofile(getScriptDirectory() .. "lib/docbook.lua")
