@@ -660,7 +660,13 @@ function DocumentationConventions:checkWord(incorrectWords, word)
         --fail("The word **" .. word .. "** does not comply with our guidelines. Please look into CCS Blacklist database.")
     end
     if glossaryWithCautionWords then
-        local message = "Use the word **" .. word .. "** with caution. **Explanation**: " .. glossaryWithCautionWords.description .. " **Recommended Action**: Verify if the word is used correctly by reading the whole sentence and correct the sentence as necessary. If the word is used correctly, mark it as reviewed in the waiving system."
+        local preferred = glossaryWithCautionWords.correct_forms
+        local message
+        if preferred and preferred != "" then
+            message = "Use the word **" .. word .. "** with caution. **Explanation**: " .. glossaryWithCautionWords.description .. " **Recommended Action**: Verify if the word is used correctly by reading the whole sentence and correct the sentence as necessary, the preferred form(s) is **" .. preferred .. "**. If the word is used correctly, mark it as reviewed in the waiving system."
+        else
+            message = "Use the word **" .. word .. "** with caution. **Explanation**: " .. glossaryWithCautionWords.description .. " **Recommended Action**: Verify if the word is used correctly by reading the whole sentence and correct the sentence as necessary. If the word is used correctly, mark it as reviewed in the waiving system."
+        end
         warn(message)
     end
 end
