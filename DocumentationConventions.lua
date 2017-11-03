@@ -662,7 +662,7 @@ function DocumentationConventions:checkWord(incorrectWords, word)
     if glossaryWithCautionWords then
         local preferred = glossaryWithCautionWords.correct_forms
         local message
-        if preferred and preferred != "" then
+        if preferred and preferred ~= "" then
             message = "Use the word **" .. word .. "** with caution. **Explanation**: " .. glossaryWithCautionWords.description .. " **Recommended Action**: Verify if the word is used correctly by reading the whole sentence and correct the sentence as necessary, the preferred form(s) is **" .. preferred .. "**. If the word is used correctly, mark it as reviewed in the waiving system."
         else
             message = "Use the word **" .. word .. "** with caution. **Explanation**: " .. glossaryWithCautionWords.description .. " **Recommended Action**: Verify if the word is used correctly by reading the whole sentence and correct the sentence as necessary. If the word is used correctly, mark it as reviewed in the waiving system."
