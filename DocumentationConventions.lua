@@ -703,7 +703,7 @@ end
 
 
 
--- Test the documentation against the existing guidelines.
+-- Test documentation against the existing guidelines.
 function DocumentationConventions.testDocumentationGuidelines()
     local readableText = DocumentationConventions.readableText
     if readableText and #readableText > 0 then
@@ -719,7 +719,7 @@ end
 
 
 
--- Test the documentation for incorrectly used words.
+-- Test documentation for incorrectly used words.
 function DocumentationConventions.testWordUsage()
     local readableText = DocumentationConventions.readableText
     if readableText and #readableText > 0 then
