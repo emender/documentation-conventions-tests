@@ -78,9 +78,6 @@ DocumentationConventions = {
 
 -- Entry point for the test.
 function DocumentationConventions.setUp()
-    dofile(getScriptDirectory() .. "lib/publican.lua")
-    dofile(getScriptDirectory() .. "lib/docbook.lua")
-    dofile(getScriptDirectory() .. "lib/xml.lua")
     local isReady = DocumentationConventions:checkVariables()
     if not isReady then
         return
@@ -91,6 +88,17 @@ end
 
 
 function DocumentationConventions:checkVariables()
+    local publicanLib = getScriptDirectory() .. "lib/publican.lua"
+    local docbookLib = getScriptDirectory() .. "lib/docbook.lua"
+    local xmlLib = getScriptDirectory() .. "lib/xml.lua"
+    if not canOpenFile(publicanLib) or
+            not canOpenFile(docbookLib) or
+            not canOpenFile(xmlLib) then
+        return false
+    end
+    dofile(publicanLib)
+    dofile(docbookLib)
+    dofile(xmlLib)
     self.docDir = getVarFromFile("results.cwd")
     if not self.docDir then
         return false
