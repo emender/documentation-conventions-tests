@@ -534,7 +534,7 @@ end
 
 
 function getPrintMessage(word, paramTable, files)
-    local message = "***" .. word .. "*** COUNT: " .. paramTable.count
+    local message = "**" .. word .. "** COUNT: " .. paramTable.count
     if paramTable.source then
         message = message .. ". SOURCE: " .. paramTable.source
     end
