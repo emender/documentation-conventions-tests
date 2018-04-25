@@ -3,7 +3,7 @@ The Documentation Conventions test verifies that documentation does not contain
 any spell checking errors, violations against word usage guidelines, or words
 that seem to be out of context.
 
-Copyright (C) 2014-2017 Pavel Tisnovsky
+Copyright (C) 2014-2018 Pavel Tisnovsky, Lana Ovcharenko
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
