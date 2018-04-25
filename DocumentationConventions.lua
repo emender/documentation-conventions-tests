@@ -29,7 +29,7 @@ DocumentationConventions = {
         description = "The Documentation Conventions test verifies that documentation does not contain any spell checking errors, violations against word usage guidelines, or words that seem to be out of context.",
         authors = "Pavel Tisnovsky, Lana Ovcharenko",
         emails = "ptisnovs@redhat.com, lovchare@redhat.com",
-        changed = "2017-04-27",
+        changed = "2018-04-25",
         tags = {"DocBook", "Release"}
     },
     
