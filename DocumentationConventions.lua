@@ -113,8 +113,11 @@ function DocumentationConventions:checkVariables()
     end
     local pubObj = publican.create(publicanFile)
     local masterFile = pubObj:findMainFile()
-    local docObj = docbook.create(masterFile)
+    if not canOpenFile(masterFile) then
+        return false
+    end
     pass("Master file: " .. masterFile)
+    local docObj = docbook.create(masterFile)
     self.readableText = docObj:getReadableText()
     local includesFile = "results.includes"
     if not canOpenFile(includesFile) then
