@@ -131,7 +131,6 @@ end
 
 function getVarFromFile(file)
     if not canOpenFile(file) then
-        fail("Missing " .. file .. "...")
         return nil
     end
     local input = io.open(file, "r")
@@ -143,15 +142,12 @@ end
 
 
 function canOpenFile(file)
-    if not file then
-        fail("Missing " .. file .. "...")
-        return false
-    end
     local input = io.open(file, "r")
     if input then
         input:close()
         return true
     end
+    fail("Missing " .. file .. "...")
     return false
 end
 
