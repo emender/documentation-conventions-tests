@@ -136,16 +136,6 @@ function getVarFromFile(file)
         return line
     end
 end
-    
-
-
-function getVarFromFile(file)
-    local input = slurpTable(file)
-    if input and #input >= 1 then
-        return input[1]
-    end
-    return nil
-end
 
 
 
