@@ -26,7 +26,8 @@ Once it's installed, run the script "generate_dictionary.sh" in the test folder.
 sudo dnf install lua
 ~~~~~~~~
 7. Last piece is libraries. These can be downloaded [here](https://github.com/emender/emender-lib/tree/master/lib). You need "docbook.lua", "publican.lua" and "xml.lua". When you first run the tests, it will give you an error message and you'll see the path at which these libraries should be placed.
-8. You're ready to run the tests! Through Terminal navigate to the documentation folder. Then type `emend path_to_test_folder/DocumentationConventions.lua` and see the results. You can check available Emender parameters [here](https://github.com/emender/emender/blob/master/doc/man/man1/emend.1.pod).
+8. The external services (such as whitelist, blacklist, glossary etc.) are not required, but they give some extra information + have a wider selection of words. Unlike Aspell, these are tailored for the Red Hat documentation team and will have all the latest and greatest updates.
+9. You're ready to run the tests! Through Terminal navigate to the documentation folder. Then type `emend path_to_test_folder/DocumentationConventions.lua` and see the results. You can check available Emender parameters [here](https://github.com/emender/emender/blob/master/doc/man/man1/emend.1.pod).
 
 ## Extra
 
