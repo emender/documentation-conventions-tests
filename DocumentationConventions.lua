@@ -71,15 +71,16 @@ DocumentationConventions = {
     withCautionLowercase = {},
     --
     readableText = nil,
-    testDir = nil
+    testDir = nil,
+    isReady = true
 }
 
 
 
 -- Entry point for the test.
 function DocumentationConventions.setUp()
-    local isReady = DocumentationConventions:checkVariables()
-    if not isReady then
+    DocumentationConventions.isReady = DocumentationConventions:checkVariables()
+    if not DocumentationConventions.isReady then
         return
     end
     DocumentationConventions:loadDictionaries()
@@ -705,6 +706,9 @@ end
 
 -- Test documentation against the existing guidelines.
 function DocumentationConventions.testDocumentationGuidelines()
+    if not DocumentationConventions.isReady then
+        return
+    end
     local readableText = DocumentationConventions.readableText
     if readableText and #readableText > 0 then
         local readableParts = table.concat(readableText, " ")
@@ -721,6 +725,9 @@ end
 
 -- Test documentation for incorrectly used words.
 function DocumentationConventions.testWordUsage()
+    if not DocumentationConventions.isReady then
+        return
+    end
     local readableText = DocumentationConventions.readableText
     if readableText and #readableText > 0 then
         local readableParts = table.concat(readableText, " ")
