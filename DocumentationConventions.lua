@@ -29,12 +29,10 @@ DocumentationConventions = {
         description = "The Documentation Conventions test verifies that documentation does not contain any spell checking errors, violations against word usage guidelines, or words that seem to be out of context.",
         authors = "Pavel Tisnovsky, Lana Ovcharenko",
         emails = "ptisnovs@redhat.com, lovchare@redhat.com",
-        changed = "2018-04-25",
+        changed = "2018-04-27",
         tags = {"DocBook", "Release"}
-    },
-    
+    },    
     -- These are set from external config files.
-    docDir = nil,
     includedFiles = nil,
     
     -- These are files in the test directory.
@@ -100,14 +98,6 @@ function DocumentationConventions:checkVariables()
     dofile(publicanLib)
     dofile(docbookLib)
     dofile(xmlLib)
-    self.docDir = getVarFromFile("results.cwd")
-    if not self.docDir then
-        return false
-    end
-    pass("Documentation directory: " .. self.docDir)
-    if not self.docDir:endsWith("/") then
-        self.docDir = self.docDir .. "/"
-    end
     local publicanFile = "publican.cfg"
     if not canOpenFile(publicanFile) then
         return false
@@ -417,7 +407,7 @@ function DocumentationConventions:checkWord(word)
     local incorrectTable = {}
     local withCautionTable = {}
     
-    if self.blacklist[word] then
+    if self.blacklist and self.blacklist[word] then
         if not self.blacklisted[word] then
             self.blacklisted[word] = createTableFromWord({count = 1})
         else 
@@ -426,48 +416,57 @@ function DocumentationConventions:checkWord(word)
         return
     end
     
-    if self.blacklistLowercase[word] then
+    if self.blacklistLowercase and self.blacklistLowercase[word] then
         isBlacklistedLowercase = true
         blacklistedTable = {lowercaseSource = "blacklist words"}
     end
     
-    local w = self.glossaryIncorrect[word]
-    if w then
-        if not self.incorrect[word] then
-            self.incorrect[word] = createTableFromWord({source = w.source_name, correctForms = w.correct_forms, count = 1})
-        else 
-            self.incorrect[word].count = self.incorrect[word].count + 1
+    if self.glossaryIncorrect then
+        local w = self.glossaryIncorrect[word]
+        if w then
+            if not self.incorrect[word] then
+                self.incorrect[word] = createTableFromWord({source = w.source_name, correctForms = w.correct_forms, count = 1})
+            else 
+                self.incorrect[word].count = self.incorrect[word].count + 1
+            end
+            return
         end
-        return
     end
     
-    w = self.glossaryIncorrectLowercase[word]
-    if w then
-        isIncorrectLowercase = true
-        incorrectTable = {lowercaseSource = "glossary incorrect words", source = w.source_name, correctForms = w.correct_forms}
-    end
-    
-    if self.glossaryCorrect[word] or
-            self.whitelist[word] or
-            self.aspell[word] then
-        return
-    end
-    
-    w = self.glossaryWithCaution[word]
-    if w then
-        if not self.withCaution[word] then
-            self.withCaution[word] = createTableFromWord({source = w.source_name, correctForms = w.correct_forms, count = 1})
-        else 
-            self.withCaution[word].count = self.withCaution[word].count + 1
+    if self.glossaryIncorrectLowercase then
+        w = self.glossaryIncorrectLowercase[word]
+        if w then
+            isIncorrectLowercase = true
+            incorrectTable = {lowercaseSource = "glossary incorrect words", source = w.source_name, correctForms = w.correct_forms}
         end
+        
+    end
+    
+    if (self.glossaryCorrect and self.glossaryCorrect[word]) or
+            (self.whitelist and self.whitelist[word]) or
+            (self.aspell and self.aspell[word]) then
         return
     end
     
-    w = self.glossaryWithCautionLowercase[word]
-    if w then
-        isWithCautionLowercase = true
-        withCautionTable = {lowercaseSource = "glossary with caution words", source = w.source_name, correctForms = w.correct_forms}
-    end 
+    if self.glossaryWithCaution then
+        w = self.glossaryWithCaution[word]
+        if w then
+            if not self.withCaution[word] then
+                self.withCaution[word] = createTableFromWord({source = w.source_name, correctForms = w.correct_forms, count = 1})
+            else 
+                self.withCaution[word].count = self.withCaution[word].count + 1
+            end
+            return
+        end
+    end
+    
+    if self.glossaryWithCautionLowercase then
+        w = self.glossaryWithCautionLowercase[word]
+        if w then
+            isWithCautionLowercase = true
+            withCautionTable = {lowercaseSource = "glossary with caution words", source = w.source_name, correctForms = w.correct_forms}
+        end 
+    end
     
     -- If all else fails, check for a lowercase match.
     local table = {}
