@@ -423,7 +423,7 @@ function DocumentationConventions:checkWord(word)
     
     if self.blacklistLowercase and self.blacklistLowercase[word] then
         isBlacklistedLowercase = true
-        blacklistedTable = {lowercaseSource = "blacklist words"}
+        blacklistedTable = {lowercaseSource = "blacklist words", count = 1}
     end
     
     if self.glossaryIncorrect then
@@ -442,7 +442,7 @@ function DocumentationConventions:checkWord(word)
         w = self.glossaryIncorrectLowercase[word]
         if w then
             isIncorrectLowercase = true
-            incorrectTable = {lowercaseSource = "glossary incorrect words", source = w.source_name, correctForms = w.correct_forms}
+            incorrectTable = {lowercaseSource = "glossary incorrect words", source = w.source_name, correctForms = w.correct_forms, count = 1}
         end
         
     end
@@ -469,25 +469,25 @@ function DocumentationConventions:checkWord(word)
         w = self.glossaryWithCautionLowercase[word]
         if w then
             isWithCautionLowercase = true
-            withCautionTable = {lowercaseSource = "glossary with caution words", source = w.source_name, correctForms = w.correct_forms}
+            withCautionTable = {lowercaseSource = "glossary with caution words", source = w.source_name, correctForms = w.correct_forms, count = 1}
         end 
     end
     
     -- If all else fails, check for a lowercase match.
-    local table = {}
+    local t = {}
     if isBlacklistedLowercase then
-        table = blacklistedTable
+        t = blacklistedTable
     elseif isIncorrectLowercase then
-        table = incorrectTable
+        t = incorrectTable
     elseif isWithCautionLowercase then
-        table = withCautionTable
+        t = withCautionTable
     else
         -- Nothing found.
         return
     end
     
     if not self.withCautionLowercase[word] then
-        self.withCautionLowercase[word] = createTableFromWord(table.joinTables(table, {count = 1}))
+        self.withCautionLowercase[word] = createTableFromWord(t)
     else
         self.withCautionLowercase[word].count = self.withCautionLowercase[word].count + 1
     end
