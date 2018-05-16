@@ -151,9 +151,6 @@ function DocumentationConventions:includeFiles(file)
     for line in input:lines() do
         if line:startsWith(prefix) then
             local filename = line:sub(#prefix + 1):trim()
-            if not filename:startsWith("./") then
-                filename = "./" .. filename
-            end
             if canOpenFile(filename) then
                 pass("Included file: " .. filename)
                 table.insert(list, filename)
