@@ -34,6 +34,7 @@ DocumentationConventions = {
     },    
     -- These are set from external config files.
     includedFiles = nil,
+    masterDir = nil,
     
     -- These are files in the test directory.
     aspellFile = "aspell.txt",
@@ -102,6 +103,12 @@ function DocumentationConventions:checkVariables()
     if not canOpenFile(publicanFile) then
         return false
     end
+    local masterDirFile = "results.master"
+    if not canOpenFile(masterDirFile) then
+        return false
+    end
+    self.masterDir = getVarFromFile(masterDirFile)
+    pass("Working directory: " .. self.masterDir)
     local pubObj = publican.create(publicanFile)
     local masterFile = pubObj:findMainFile()
     if not canOpenFile(masterFile) then
@@ -121,9 +128,6 @@ end
 
 
 function getVarFromFile(file)
-    if not canOpenFile(file) then
-        return nil
-    end
     local input = io.open(file, "r")
     for line in input:lines() do
         return line
@@ -151,6 +155,7 @@ function DocumentationConventions:includeFiles(file)
     for line in input:lines() do
         if line:startsWith(prefix) then
             local filename = line:sub(#prefix + 1):trim()
+            filename = self.masterDir .. "/" .. filename
             if canOpenFile(filename) then
                 pass("Included file: " .. filename)
                 table.insert(list, filename)
