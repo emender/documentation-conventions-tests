@@ -522,7 +522,7 @@ end
 
 function DocumentationConventions:getFilesContainingWord(word)
     local allMatches = {}
-    local master = "master.adoc"
+    local master = self.masterDir .. "/" .. "master.adoc"
     local masterMatches = {}
     if canOpenFile(master) then
         masterMatches = grep(word, master)
