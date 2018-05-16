@@ -152,7 +152,7 @@ function DocumentationConventions:includeFiles(file)
         if line:startsWith(prefix) then
             local filename = line:sub(#prefix + 1):trim()
             if not filename:startsWith("./") then
-                filename = "./" + filename
+                filename = "./" .. filename
             end
             if canOpenFile(filename) then
                 pass("Included file: " .. filename)
