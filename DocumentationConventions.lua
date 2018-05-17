@@ -253,7 +253,7 @@ function filterGlossary(glossary, useValue)
         if table.use == useValue then
             local tableCopy = table
             tableCopy.source_name = tableCopy.source_name:trimString()
-            tableCopy.correct_forms = tableCopy.correct_forms:trimString()
+            tableCopy.correct_forms = tableCopy.correct_forms:trim()
             words[table.word:trim()] = tableCopy
             wordsLower[table.word:lower():trim()] = tableCopy
         end
