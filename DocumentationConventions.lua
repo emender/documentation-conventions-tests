@@ -29,12 +29,13 @@ DocumentationConventions = {
         description = "The Documentation Conventions test verifies that documentation does not contain any spell checking errors, violations against word usage guidelines, or words that seem to be out of context.",
         authors = "Pavel Tisnovsky, Lana Ovcharenko",
         emails = "ptisnovs@redhat.com, lovchare@redhat.com",
-        changed = "2018-04-27",
+        changed = "2018-05-30",
         tags = {"DocBook", "Release"}
     },    
-    -- These are set from external config files.
-    includedFiles = nil,
-    masterDir = nil,
+    -- These are command line arguments passed by a shell script.
+    testDir = nil,
+    docDir = nil,
+    emenderDir = nil,
     
     -- These are files in the test directory.
     aspellFile = "aspell.txt",
@@ -70,109 +71,119 @@ DocumentationConventions = {
     withCautionLowercase = {},
     --
     readableText = nil,
-    testDir = nil,
     isReady = true
 }
 
-
-
 -- Entry point for the test.
 function DocumentationConventions.setUp()
-    DocumentationConventions.isReady = DocumentationConventions:checkVariables()
-    if not DocumentationConventions.isReady then
-        return
+    local emenderSrcDir = "/usr/local/share/emender/src"
+    if DocumentationConventions.emenderDir then
+        emenderSrcDir = DocumentationConventions.emenderDir .. "/src"
+    end
+    dofile(DocumentationConventions.testDir .. "/lib/publican.lua")
+    dofile(DocumentationConventions.testDir .. "/lib/docbook.lua")
+    dofile(DocumentationConventions.testDir .. "/lib/xml.lua")
+    dofile(emenderSrcDir .. "/common/string.lua")
+    local pubObj = publican.create("publican.cfg")
+    local docObj = docbook.create(pubObj:findMainFile())
+    DocumentationConventions.readableText = docObj:getReadableText()
+    local includedFiles = DocumentationConventions:includeFiles(
+        DocumentationConventions.docDir .. "/master.adoc", 
+        DocumentationConventions.docDir)
+    DocumentationConventions.includedFiles = shortenPath(includedFiles, DocumentationConventions.docDir)
+    local includeCount = getTableLength(DocumentationConventions.includedFiles)
+    if includeCount == 1 then
+        pass("Included 1 file.")
+    elseif includeCount > 0 then
+        pass("Included " .. includeCount .. " files.")
     end
     DocumentationConventions:loadDictionaries()
 end
 
-
-
-function DocumentationConventions:checkVariables()
-    local publicanLib = getScriptDirectory() .. "lib/publican.lua"
-    local docbookLib = getScriptDirectory() .. "lib/docbook.lua"
-    local xmlLib = getScriptDirectory() .. "lib/xml.lua"
-    if not canOpenFile(publicanLib) or
-            not canOpenFile(docbookLib) or
-            not canOpenFile(xmlLib) then
-        return false
-    end
-    dofile(publicanLib)
-    dofile(docbookLib)
-    dofile(xmlLib)
-    local publicanFile = "publican.cfg"
-    if not canOpenFile(publicanFile) then
-        return false
-    end
-    local masterDirFile = "results.master"
-    if not canOpenFile(masterDirFile) then
-        return false
-    end
-    self.masterDir = getVarFromFile(masterDirFile)
-    pass("Working directory: " .. self.masterDir)
-    local pubObj = publican.create(publicanFile)
-    local masterFile = pubObj:findMainFile()
-    if not canOpenFile(masterFile) then
-        return false
-    end
-    pass("Master file: " .. masterFile)
-    local docObj = docbook.create(masterFile)
-    self.readableText = docObj:getReadableText()
-    local includesFile = "results.includes"
-    if not canOpenFile(includesFile) then
-        return false
-    end
-    self.includedFiles = self:includeFiles(includesFile)
-    return true
-end
-
-
-
-function getVarFromFile(file)
-    local input = io.open(file, "r")
-    for line in input:lines() do
-        return line
-    end
-end
-
-
-
-function canOpenFile(file)
-    local input = io.open(file, "r")
-    if input then
-        input:close()
-        return true
-    end
-    fail("Missing " .. file .. "...")
-    return false
-end
-
-
-
-function DocumentationConventions:includeFiles(file)
-    local list = {}
-    local input = io.open(file, "r")
-    local prefix = "Found an include:"
-    for line in input:lines() do
-        if line:startsWith(prefix) then
-            local filename = line:sub(#prefix + 1):trim()
-            filename = self.masterDir .. "/" .. filename
-            if canOpenFile(filename) then
-                pass("Included file: " .. filename)
-                table.insert(list, filename)
+function shortenPath(paths, basePath)
+    local newPaths = {}
+    basePath = basePath .. "/"
+    for path, val in pairs(paths) do
+        local newPath = stringRemove(path, basePath)
+        newPath = stringRemove(newPath, "./")
+        local idx = newPath:find("/../", 1, true)
+        if idx then
+            local substr = newPath:sub(1, idx - 1)
+            if substr:find("/", 1, true) then
+                lastIdx = substr:lastIndexOf("/")
+                newPath = newPath:sub(1, lastIdx) .. newPath:sub(idx + ("/../"):len())
             else
-                warn("Could not include file: " .. filename)
+                newPath = newPath:sub(idx + ("/../"):len())
             end
+        end
+        newPaths[path] = newPath
+    end
+    return newPaths
+end
+
+function stringRemove(str, substr)
+    while str:find(substr, 1, true) do
+        local idx = str:find(substr, 1, true)
+        str = str:sub(1, idx - 1) .. str:sub(idx + substr:len())
+    end
+    return str
+end
+
+function DocumentationConventions:includeFiles(file, currentDir, result)
+    result = result or {}
+    result[file] = currentDir
+    includes = getIncludes(file, currentDir)
+    -- Base case.
+    if getTableLength(includes) == 0 then
+        return {}
+    end
+    -- Recursion.
+    for include, newDir in pairs(includes) do
+        result = appendTables(result, self:includeFiles(include, newDir, result))
+    end
+    return result
+end
+
+function getIncludes(file, currentDir)
+    local includes = {}
+    local input = io.open(file, "r")
+    if not input then
+        return {}
+    end
+    for line in input:lines() do
+        if line:startsWith("include::") then
+            local include = line:gsub("include::", "")
+            local end_idx = include:lastIndexOf("%[")
+            if end_idx then
+                include = include:sub(1, end_idx - 1)
+            end
+            if include:match("{.+}") then
+                include = include:gsub("{.+}", currentDir)
+            else
+                if include:startsWith("/") then
+                    include = currentDir .. include
+                else
+                    include = currentDir .. "/" .. include
+                end
+            end
+            local newDir = getCurrentDir(include)
+            includes[include] = newDir
         end
     end
     input:close()
-    return list
+    return includes
 end
 
-
+function getCurrentDir(file)
+    local lastSlashIdx = file:lastIndexOf("/")
+    if not lastSlashIdx then
+        return "."
+    end
+    return file:sub(1, lastSlashIdx - 1)
+end
 
 function DocumentationConventions:loadDictionaries()
     -- Store the words both in their original formatting and lowercase.
-    self.testDir = getTestDir()
 --    self.atomicTypos = self:getAtomicTypos()
     self.aspell, self.aspellLowercase = self:getAspell()
     self.glossary = self:getGlossary(self.glossaryUrl)
@@ -184,17 +195,16 @@ function DocumentationConventions:loadDictionaries()
     self.blacklist, self.blacklistLowercase = self:getBlacklist(self.blacklistUrl)
 end
 
-
 function DocumentationConventions:getAtomicTypos()
     local words = {}
     local count = 0
-    local input = io.open(self.testDir .. self.atomicTyposFile, "r")
+    local input = io.open(self.testDir .. "/" .. self.atomicTyposFile, "r")
     if not input then
-        warn("Cannot open atomic typos file: " .. self.testDir .. self.atomicTyposFile)
+        warn("Cannot open atomic typos file: " .. self.testDir .. "/" .. self.atomicTyposFile)
         return {}
     end
     for line in input:lines() do
-      local i = line:find("->")
+      local i = line:find("->", 1, true)
       if i then
           local key = line:sub(1, i - 1):trim()
           local val = line:sub(i + 2):trim()
@@ -207,15 +217,13 @@ function DocumentationConventions:getAtomicTypos()
     return words
 end
 
-
-
 function DocumentationConventions:getAspell()
     local words = {}
     local wordsLower = {}
     local count = 0
-    local input = io.open(self.testDir .. self.aspellFile, "r")
+    local input = io.open(self.testDir .. "/" .. self.aspellFile, "r")
     if not input then
-        warn("Cannot open Aspell file: " .. self.testDir .. self.aspellFile)
+        warn("Cannot open Aspell file: " .. self.testDir .. "/" .. self.aspellFile)
         return {}
     end
     for line in input:lines() do
@@ -230,10 +238,8 @@ function DocumentationConventions:getAspell()
     return words, wordsLower
 end
 
-
-
 function DocumentationConventions:getGlossary(url)
-    local file = self.testDir .. "glossary.json"
+    local file = self.testDir .. "/glossary.json"
     downloadData(url, file)
     local words = readInputFile(file)
     if not words then
@@ -243,8 +249,6 @@ function DocumentationConventions:getGlossary(url)
     checkWordCount("glossary words", #words)
     return words
 end
-
-
 
 function filterGlossary(glossary, useValue)
     local words = {}
@@ -261,10 +265,8 @@ function filterGlossary(glossary, useValue)
     return words, wordsLower
 end
 
-
-
 function DocumentationConventions:getDifferentSpellingWords(url)
-    local file = self.testDir .. "different_spelling_words.json"
+    local file = self.testDir .. "/different_spelling_words.json"
     downloadData(url, file)
     local terms = readInputFile(file)
     if not terms then
@@ -279,10 +281,8 @@ function DocumentationConventions:getDifferentSpellingWords(url)
     return words
 end
 
-
-
 function DocumentationConventions:getWhitelist(url)
-    local file = self.testDir .. "whitelist.txt"
+    local file = self.testDir .. "/whitelist.txt"
     downloadData(url, file)
     local words = {}
     local wordsLower = {}
@@ -302,10 +302,8 @@ function DocumentationConventions:getWhitelist(url)
     return words, wordsLower
 end
 
-
-
 function DocumentationConventions:getBlacklist(url)
-    local file = self.testDir .. "blacklist.txt"
+    local file = self.testDir .. "/blacklist.txt"
     downloadData(url, file)
     local words = {}
     local wordsLower = {}
@@ -332,8 +330,6 @@ function DocumentationConventions:getBlacklist(url)
     return words, wordsLower
 end
 
-
-
 function readInputFile(file)
     local string = readInputFileAsString(file)
     if not string then
@@ -341,8 +337,6 @@ function readInputFile(file)
     end
     return json.decode(string, 1, nil)
 end
-
-
 
 function readInputFileAsString(file)
     local input = io.open(file, "r")
@@ -355,8 +349,6 @@ function readInputFileAsString(file)
     return string
 end
 
-
-
 function checkWordCount(service, count)
     if count == 0 then
         warn("Possible error communicating with service: " .. service)
@@ -365,74 +357,44 @@ function checkWordCount(service, count)
     end
 end
 
-
-
 function downloadData(url, file)
-    if not url then
-        return
-    end
-    local command = "wget -O " .. file .. " " .. url .. "> /dev/null 2>&1"
+    local command = "wget -O " .. file .. " " .. url .. " > /dev/null 2>&1"
     os.execute(command)
 end
 
-
-
-function getTestDir()
-    local path = debug.getinfo(1).source
-    if path:startsWith("@") then
-        path = path:sub(2, path:lastIndexOf("/"))
+function createTable(params)
+    local t = {}
+    for param, value in pairs(params) do
+        if value ~= "" then
+            t[param] = value
+        end
     end
-    return path
+    return t
 end
-
-
-
-function createTableFromWord(word)
-    local paramTable = {}
-    if word.source and word.source ~= "" then
-        paramTable.source = word.source
-    end
-    if word.correctForms and word.correctForms ~= "" then
-        paramTable.correctForms = word.correctForms
-    end
-    if word.lowercaseSource then
-        paramTable.lowercaseSource = word.lowercaseSource
-    end
-    paramTable.count = 1
-    return paramTable
-end
-
-
 
 function DocumentationConventions:checkWord(word)
     local isBlacklistedLowercase = false
     local isIncorrectLowercase = false
     local isWithCautionLowercase = false
-    local blacklistedTable = {}
-    local incorrectTable = {}
-    local withCautionTable = {}
+    local lowercaseTable = {}
     
     if self.blacklist and self.blacklist[word] then
         if not self.blacklisted[word] then
-            self.blacklisted[word] = createTableFromWord({count = 1})
-        else 
-            self.blacklisted[word].count = self.blacklisted[word].count + 1
+            self.blacklisted[word] = createTable({})
         end
         return
     end
     
     if self.blacklistLowercase and self.blacklistLowercase[word] then
         isBlacklistedLowercase = true
-        blacklistedTable = {lowercaseSource = "blacklist words", count = 1}
+        lowercaseTable = {lowercaseSource = "blacklist words"}
     end
     
     if self.glossaryIncorrect then
         local w = self.glossaryIncorrect[word]
         if w then
             if not self.incorrect[word] then
-                self.incorrect[word] = createTableFromWord({source = w.source_name, correctForms = w.correct_forms, count = 1})
-            else 
-                self.incorrect[word].count = self.incorrect[word].count + 1
+                self.incorrect[word] = createTable({source = w.source_name, correctForms = w.correct_forms})
             end
             return
         end
@@ -442,7 +404,7 @@ function DocumentationConventions:checkWord(word)
         w = self.glossaryIncorrectLowercase[word]
         if w then
             isIncorrectLowercase = true
-            incorrectTable = {lowercaseSource = "glossary incorrect words", source = w.source_name, correctForms = w.correct_forms, count = 1}
+            lowercaseTable = {lowercaseSource = "glossary incorrect words", source = w.source_name, correctForms = w.correct_forms}
         end
         
     end
@@ -457,9 +419,7 @@ function DocumentationConventions:checkWord(word)
         w = self.glossaryWithCaution[word]
         if w then
             if not self.withCaution[word] then
-                self.withCaution[word] = createTableFromWord({source = w.source_name, correctForms = w.correct_forms, count = 1})
-            else 
-                self.withCaution[word].count = self.withCaution[word].count + 1
+                self.withCaution[word] = createTable({source = w.source_name, correctForms = w.correct_forms})
             end
             return
         end
@@ -469,31 +429,18 @@ function DocumentationConventions:checkWord(word)
         w = self.glossaryWithCautionLowercase[word]
         if w then
             isWithCautionLowercase = true
-            withCautionTable = {lowercaseSource = "glossary with caution words", source = w.source_name, correctForms = w.correct_forms, count = 1}
+            lowercaseTable = {lowercaseSource = "glossary with caution words", source = w.source_name, correctForms = w.correct_forms}
         end 
     end
     
-    -- If all else fails, check for a lowercase match.
-    local t = {}
-    if isBlacklistedLowercase then
-        t = blacklistedTable
-    elseif isIncorrectLowercase then
-        t = incorrectTable
-    elseif isWithCautionLowercase then
-        t = withCautionTable
-    else
-        -- Nothing found.
+    if not isBlacklistedLowercase and not isIncorrectLowercase and not isWithCautionLowercase then
         return
     end
     
     if not self.withCautionLowercase[word] then
-        self.withCautionLowercase[word] = createTableFromWord(t)
-    else
-        self.withCautionLowercase[word].count = self.withCautionLowercase[word].count + 1
+        self.withCautionLowercase[word] = createTable(lowercaseTable)
     end
 end
-
-
 
 function getTableLength(table)
     if not table then
@@ -506,57 +453,183 @@ function getTableLength(table)
     return length
 end
 
-
-
-function grep(word, file)
-    local regexp1 = "\\W" .. word .. "\\W"
-    local regexp2 = "^" .. word .. "\\W"
-    local regexp3 = "\\W" .. word .. "$"
-    local regexp4 = "^" .. word .. "$"
-    local ror = "\\|"
-    local cmd = "grep -n -H '" .. regexp1 .. ror .. regexp2 .. ror .. regexp3 .. ror .. regexp4 .. "' " .. file
-    return execCaptureOutputAsTable(cmd)
+function calculateLine(lines, idx)
+    local line = nil
+    for i, lineIdx in ipairs(lines) do
+        if idx > lineIdx then
+            line = i
+        end
+    end
+    if not line then
+        line = #lines
+    end
+    return line
 end
 
+function findExtraWords(text, number)
+    local cutoffIdx1 = text:find("\n", 1, true)
+    local cutoffIdx2 = text:find(".", 1, true)
+    if cutoffIdx1 and cutoffIdx2 then
+        if cutoffIdx1 < cutoffIdx2 then
+            text = text:sub(1, cutoffIdx1 - 1)
+        else
+            text = text:sub(1, cutoffIdx2 - 1)
+        end
+    elseif cutoffIdx1 then
+        text = text:sub(1, cutoffIdx1 - 1)
+    elseif cutoffIdx2 then
+        text = text:sub(1, cutoffIdx2 - 1)
+    end
+    local words = text:gmatch("[^%s]+")
+    local count = 0
+    local extraWords = nil
+    for word in words do
+        if not extraWords then
+            extraWords = word
+        else
+            extraWords = extraWords .. " " .. word
+        end
+        count = count + 1
+        if count == number then
+            break
+        end
+    end
+    return extraWords
+end
 
+function findWordContext(string, word, startIdx)
+    local leftSubstr = string:sub(1, startIdx - 1)
+    local rightSubstr = string:sub(startIdx + #word)
+    local leftContext = findExtraWords(leftSubstr:reverse(), 2)
+    local rightContext = findExtraWords(rightSubstr, 2)
+    local context = word
+    if leftContext then
+        context = leftContext:reverse() .. " " .. context
+    end
+    if rightContext then
+        context = context .. " " .. rightContext
+    end
+    return context
+end
+
+function countLines(string)
+    local lines = {0}
+    local startSearchIdx = 1
+    local idx1, idx2 = string:find("\n", startSearchIdx)
+    while idx1 do
+        table.insert(lines, idx1)
+        startSearchIdx = idx2 + 1
+        idx1, idx2 = string:find("\n", startSearchIdx)
+        if idx2 == #string then
+            idx1 = nil
+        end
+    end
+    return lines
+end
+
+function replaceRegexWithSpaces(string, regex)
+    local idx1, idx2 = string:find(regex)
+    while idx1 do
+        local substr = string:sub(idx1, idx2)
+        local spaces = ""
+        for i = 1, #substr do
+            spaces = spaces .. " "
+        end
+        string = string:sub(1, idx1 - 1) .. spaces .. string:sub(idx2 + 1)
+        idx1, idx2 = string:find(regex)
+    end
+    return string
+end
+
+function findWordInString(word, string, startSearchIdx)
+    local words = string:sub(startSearchIdx):gmatch("[%w-/:_]+")
+    local currentIdx = startSearchIdx
+    for w in words do
+        local startIdx = string:find(w, currentIdx, true)
+        local _, colonCount = w:gsub(":", "")
+        local colonIdx = w:find(":", 1, true)
+        if colonCount == 1 and colonIdx == #w then
+            if string:sub(startIdx, startIdx + #w):find("\n") 
+                    or string:sub(startIdx, startIdx + #w):find(" ") then
+                -- ":"" is not part of the word.
+                local newWord = w:sub(1, colonIdx - 1) .. w:sub(colonIdx + 1)
+                if newWord == word then
+                    return startIdx
+                end
+            else
+                if w == word then
+                    return startIdx
+                end
+            end
+        elseif w == word then
+            return startIdx
+        else
+            currentIdx = startIdx + #w
+        end
+    end
+    return nil
+end
+
+function findWordMatchesInFile(word, file)
+    local input = io.open(file, "r")
+    if not input then
+        return {}
+    end
+    local text = ""
+    for line in input:lines() do
+        text = text .. line .. "\n"
+    end
+    local lines = countLines(text)
+    local newText = replaceRegexWithSpaces(text, "<<.->>")
+    newText = replaceRegexWithSpaces(newText, "```.-```")
+    newText = replaceRegexWithSpaces(newText, "`.-`")
+    local matches = {}
+    local startSearchIdx = 1
+    local idx1 = findWordInString(word, newText, startSearchIdx)
+    while idx1 do
+        local context = findWordContext(text, word, idx1)
+        local line = calculateLine(lines, idx1)
+        local shortPath = DocumentationConventions.includedFiles[file]
+        table.insert(matches, shortPath .. " (line " .. line .. "): " .. context)
+        startSearchIdx = idx1 + #word
+        idx1 = findWordInString(word, newText, startSearchIdx)
+    end 
+    return matches
+end
 
 function DocumentationConventions:getFilesContainingWord(word)
     local allMatches = {}
-    local master = self.masterDir .. "/" .. "master.adoc"
-    local masterMatches = {}
-    if canOpenFile(master) then
-        masterMatches = grep(word, master)
-    end
-    allMatches = table.appendTables(allMatches, masterMatches)
-    for _, file in ipairs(self.includedFiles) do
-        local matches = grep(word, file)
-        allMatches = table.appendTables(allMatches, matches)
+    for file, _ in pairs(self.includedFiles) do
+        local matches = findWordMatchesInFile(word, file)
+        for _, val in ipairs(matches) do 
+            table.insert(allMatches, val) 
+        end
     end
     return allMatches
 end
 
-
-
-function getPrintMessage(word, paramTable, files)
-    local message = "**" .. word .. "** COUNT: " .. paramTable.count
+function DocumentationConventions:getPrintMessage(word, paramTable, files)
+    local result = "**" .. word .. "**"
+    local spaces = "      "
+    local message = ""
     if paramTable.source then
-        message = message .. ". SOURCE: " .. paramTable.source
+        message = message .. "\n\t" .. spaces .. "SOURCE: " .. paramTable.source
     end
     if paramTable.correctForms then
-        message = message .. ". CORRECT FORMS: " .. paramTable.correct_forms
+        message = message .. "\n\t" .. spaces .. "CORRECT FORMS: " .. paramTable.correctForms
     end
-    message = message .. ". ENCOUNTERED IN: ["
+    message = message .. "\n\t" .. spaces .. "ENCOUNTERED IN:"
+    local counter = 1
     for _, file in ipairs(files) do
-        message = message .. "'" .. file .. "', "
+        message = message .. "\n\t" .. spaces .. counter .. ". " .. file
+        counter = counter + 1
     end
-    message = message:sub(1, #message - 2) .. "]"
     if paramTable.lowercaseMatch then
-        message = message .. ". FOUND A LOWERCASE MATCH IN: " .. paramTable.lowercaseMatch .. " words."
+        message = message .. "\n\t" .. spaces .. "FOUND A LOWERCASE MATCH IN: " .. paramTable.lowercaseMatch
     end
-    return message
+    message = "\t" .. spaces .. "COUNT: " .. (counter - 1) .. message
+    return result, message
 end
-
-
 
 function DocumentationConventions:printResults()
     local blacklistedCount = getTableLength(self.blacklisted)
@@ -567,9 +640,9 @@ function DocumentationConventions:printResults()
         local messages = {}
         for word, paramTable in pairs(self.blacklisted) do
             local files = DocumentationConventions:getFilesContainingWord(word)
-            local fileCount = getTableLength(files)
-            if fileCount > 0 then
-                table.insert(messages, getPrintMessage(word, paramTable, files))
+            if #files > 0 then
+                local result, message = self:getPrintMessage(word, paramTable, files)
+                messages[message] = result
             else
                 blacklistedCount = blacklistedCount - 1
             end
@@ -580,8 +653,9 @@ function DocumentationConventions:printResults()
             else
                 fail(string.upper("These " .. blacklistedCount .. " words are blacklisted in the CCS Blacklist database:"))
             end
-            for _, message in ipairs(messages) do
-                fail(message)
+            for message, result in pairs(messages) do
+                fail(result)
+                print(message)
             end
         end
     end
@@ -589,9 +663,9 @@ function DocumentationConventions:printResults()
         local messages = {}
         for word, paramTable in pairs(self.incorrect) do
             local files = DocumentationConventions:getFilesContainingWord(word)
-            local fileCount = getTableLength(files)
-            if fileCount > 0 then
-                table.insert(messages, getPrintMessage(word, paramTable, files))
+            if #files > 0 then
+                local result, message = self:getPrintMessage(word, paramTable, files)
+                messages[message] = result
             else
                 incorrectCount = incorrectCount - 1
             end
@@ -602,8 +676,9 @@ function DocumentationConventions:printResults()
             else
                 fail(string.upper("These " .. incorrectCount .. " words were marked as incorrect:"))
             end
-            for _, message in ipairs(messages) do
-                fail(message)
+            for message, result in pairs(messages) do
+                fail(result)
+                print(message)
             end
         end
     end
@@ -611,9 +686,9 @@ function DocumentationConventions:printResults()
         local messages = {}
         for word, paramTable in pairs(self.withCaution) do
             local files = DocumentationConventions:getFilesContainingWord(word)
-            local fileCount = getTableLength(files)
-            if fileCount > 0 then
-                table.insert(messages, getPrintMessage(word, paramTable, files))
+            if #files > 0 then
+                local result, message = self:getPrintMessage(word, paramTable, files)
+                messages[message] = result
             else
                 withCautionCount = withCautionCount - 1
             end
@@ -624,8 +699,9 @@ function DocumentationConventions:printResults()
             else
                 warn(string.upper("These " .. withCautionCount .. " words should be used with caution:"))
             end
-            for _, message in ipairs(messages) do
-                warn(message)
+            for message, result in pairs(messages) do
+                warn(result)
+                print(message)
             end
         end
     end
@@ -633,9 +709,9 @@ function DocumentationConventions:printResults()
         local messages = {}
         for word, paramTable in pairs(self.withCautionLowercase) do
             local files = DocumentationConventions:getFilesContainingWord(word)
-            local fileCount = getTableLength(files)
-            if fileCount > 0 then
-                table.insert(messages, getPrintMessage(word, paramTable, files))
+            if #files > 0 then
+                local result, message = self:getPrintMessage(word, paramTable, files)
+                messages[message] = result
             else
                 withCautionLowercaseCount = withCautionLowercaseCount - 1
             end
@@ -646,14 +722,13 @@ function DocumentationConventions:printResults()
             else
                 warn(string.upper("These " .. withCautionLowercaseCount .. " words were only matched by making them lowercase:"))
             end
-            for _, message in ipairs(messages) do
-                warn(message)
+            for message, result in pairs(messages) do
+                warn(result)
+                print(message)
             end
         end
     end
 end
-
-
 
 function DocumentationConventions:getGlossaryWordSource(word)
     for _, term in ipairs(self.glossary) do
@@ -664,8 +739,6 @@ function DocumentationConventions:getGlossaryWordSource(word)
     return "unknown"
 end
 
-
-
 function getWordList(readableParts)
     local words = {}
     for word in readableParts:gmatch("[%w%p-]+") do
@@ -673,8 +746,6 @@ function getWordList(readableParts)
     end
     return words
 end
-
-
 
 function DocumentationConventions:checkWordUsage(readableParts)
     local words = getWordList(readableParts)
@@ -687,10 +758,12 @@ function DocumentationConventions:checkWordUsage(readableParts)
             if not uniqueWords[word] then
                 uniqueWords[word] = true
                 count = count + 1
-                local source = "SOURCE: " .. self:getGlossaryWordSource(word)
-                local context = (wordp2 or "") .. " " .. (wordp1 or "") .. " " .. word .. " " .. (wordn1 or "") .. " " .. (wordn2 or "")
-                local message = "**" .. word .. "** CONTEXT: '" .. context .. "'. " .. source
-                table.insert(messages, message)
+                local result = "**" .. word .. "**"
+                local spaces = "      "
+                local source = "\t" .. spaces .. "SOURCE: " .. self:getGlossaryWordSource(word)
+                local context = (wordp2 .. " " or "") .. (wordp1 .. " " or "") .. word .. " " .. (wordn1 .. " " or "") .. (wordn2 .. " " or "")
+                local message = source .. "\n\t" .. spaces .. "CONTEXT: " .. context
+                messages[message] = result
             end
         end
     end
@@ -700,19 +773,30 @@ function DocumentationConventions:checkWordUsage(readableParts)
         else
             warn(string.upper("Verify that these words are used correctly. If they are, mark them as reviewed in the waiving system."))
         end
-        for _, message in ipairs(messages) do
-            warn(message)
+        for message, result in pairs(messages) do
+            warn(result)
+            print(message)
         end
     end
 end
 
-
+function appendTables(table1, table2)
+    local table3 = {}
+    for key, val in pairs(table1) do
+        if not table3[key]  then
+            table3[key] = val
+        end
+    end
+    for key, val in pairs(table2) do
+        if not table3[key] then
+            table3[key] = val
+        end
+    end
+    return table3
+end
 
 -- Test documentation against the existing guidelines.
 function DocumentationConventions.testDocumentationGuidelines()
-    if not DocumentationConventions.isReady then
-        return
-    end
     local readableText = DocumentationConventions.readableText
     if readableText and #readableText > 0 then
         local readableParts = table.concat(readableText, " ")
@@ -725,13 +809,8 @@ function DocumentationConventions.testDocumentationGuidelines()
     end
 end
 
-
-
 -- Test documentation for incorrectly used words.
 function DocumentationConventions.testWordUsage()
-    if not DocumentationConventions.isReady then
-        return
-    end
     local readableText = DocumentationConventions.readableText
     if readableText and #readableText > 0 then
         local readableParts = table.concat(readableText, " ")
@@ -740,4 +819,3 @@ function DocumentationConventions.testWordUsage()
        fail("No readable text found.")
     end
 end
-

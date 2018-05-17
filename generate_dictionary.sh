@@ -1,1 +1,1 @@
-aspell --lang=en dump master | aspell --lang=en expand | sort > aspell.txt
+aspell dump master | aspell expand | sort > aspell.txt
