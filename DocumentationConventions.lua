@@ -543,7 +543,7 @@ function getPrintMessage(word, paramTable, files)
         message = message .. ". SOURCE: " .. paramTable.source
     end
     if paramTable.correctForms then
-        message = message .. ". CORRECT FORMS: " .. paramTable.correct_forms
+        message = message .. ". CORRECT FORMS: " .. paramTable.correctForms
     end
     message = message .. ". ENCOUNTERED IN: ["
     for _, file in ipairs(files) do
