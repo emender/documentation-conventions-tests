@@ -253,7 +253,7 @@ function filterGlossary(glossary, useValue)
         if table.use == useValue then
             local tableCopy = table
             tableCopy.source_name = tableCopy.source_name:trimString()
-            tableCopy.correct_forms = tableCopy.correct_forms:trim()
+            tableCopy.correct_forms = tableCopy.correct_forms:trimString()
             words[table.word:trim()] = tableCopy
             wordsLower[table.word:lower():trim()] = tableCopy
         end
@@ -393,7 +393,7 @@ function createTableFromWord(word)
         paramTable.source = word.source
     end
     if word.correctForms and word.correctForms ~= "" then
-        paramTable.correctForms = word.correct_forms
+        paramTable.correctForms = word.correctForms
     end
     if word.lowercaseSource then
         paramTable.lowercaseSource = word.lowercaseSource
