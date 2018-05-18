@@ -34,6 +34,7 @@ DocumentationConventions = {
     },    
     -- These are set from external config files.
     includedFiles = nil,
+    masterDir = nil,
     
     -- These are files in the test directory.
     aspellFile = "aspell.txt",
@@ -102,6 +103,12 @@ function DocumentationConventions:checkVariables()
     if not canOpenFile(publicanFile) then
         return false
     end
+    local masterDirFile = "results.master"
+    if not canOpenFile(masterDirFile) then
+        return false
+    end
+    self.masterDir = getVarFromFile(masterDirFile)
+    pass("Working directory: " .. self.masterDir)
     local pubObj = publican.create(publicanFile)
     local masterFile = pubObj:findMainFile()
     if not canOpenFile(masterFile) then
@@ -121,9 +128,6 @@ end
 
 
 function getVarFromFile(file)
-    if not canOpenFile(file) then
-        return nil
-    end
     local input = io.open(file, "r")
     for line in input:lines() do
         return line
@@ -151,6 +155,7 @@ function DocumentationConventions:includeFiles(file)
     for line in input:lines() do
         if line:startsWith(prefix) then
             local filename = line:sub(#prefix + 1):trim()
+            filename = self.masterDir .. "/" .. filename
             if canOpenFile(filename) then
                 pass("Included file: " .. filename)
                 table.insert(list, filename)
@@ -388,7 +393,7 @@ function createTableFromWord(word)
         paramTable.source = word.source
     end
     if word.correctForms and word.correctForms ~= "" then
-        paramTable.correctForms = word.correct_forms
+        paramTable.correctForms = word.correctForms
     end
     if word.lowercaseSource then
         paramTable.lowercaseSource = word.lowercaseSource
@@ -418,7 +423,7 @@ function DocumentationConventions:checkWord(word)
     
     if self.blacklistLowercase and self.blacklistLowercase[word] then
         isBlacklistedLowercase = true
-        blacklistedTable = {lowercaseSource = "blacklist words"}
+        blacklistedTable = {lowercaseSource = "blacklist words", count = 1}
     end
     
     if self.glossaryIncorrect then
@@ -437,7 +442,7 @@ function DocumentationConventions:checkWord(word)
         w = self.glossaryIncorrectLowercase[word]
         if w then
             isIncorrectLowercase = true
-            incorrectTable = {lowercaseSource = "glossary incorrect words", source = w.source_name, correctForms = w.correct_forms}
+            incorrectTable = {lowercaseSource = "glossary incorrect words", source = w.source_name, correctForms = w.correct_forms, count = 1}
         end
         
     end
@@ -464,25 +469,25 @@ function DocumentationConventions:checkWord(word)
         w = self.glossaryWithCautionLowercase[word]
         if w then
             isWithCautionLowercase = true
-            withCautionTable = {lowercaseSource = "glossary with caution words", source = w.source_name, correctForms = w.correct_forms}
+            withCautionTable = {lowercaseSource = "glossary with caution words", source = w.source_name, correctForms = w.correct_forms, count = 1}
         end 
     end
     
     -- If all else fails, check for a lowercase match.
-    local table = {}
+    local t = {}
     if isBlacklistedLowercase then
-        table = blacklistedTable
+        t = blacklistedTable
     elseif isIncorrectLowercase then
-        table = incorrectTable
+        t = incorrectTable
     elseif isWithCautionLowercase then
-        table = withCautionTable
+        t = withCautionTable
     else
         -- Nothing found.
         return
     end
     
     if not self.withCautionLowercase[word] then
-        self.withCautionLowercase[word] = createTableFromWord(table.joinTables(table, {count = 1}))
+        self.withCautionLowercase[word] = createTableFromWord(t)
     else
         self.withCautionLowercase[word].count = self.withCautionLowercase[word].count + 1
     end
@@ -517,7 +522,7 @@ end
 
 function DocumentationConventions:getFilesContainingWord(word)
     local allMatches = {}
-    local master = "master.adoc"
+    local master = self.masterDir .. "/" .. "master.adoc"
     local masterMatches = {}
     if canOpenFile(master) then
         masterMatches = grep(word, master)
@@ -538,7 +543,7 @@ function getPrintMessage(word, paramTable, files)
         message = message .. ". SOURCE: " .. paramTable.source
     end
     if paramTable.correctForms then
-        message = message .. ". CORRECT FORMS: " .. paramTable.correct_forms
+        message = message .. ". CORRECT FORMS: " .. paramTable.correctForms
     end
     message = message .. ". ENCOUNTERED IN: ["
     for _, file in ipairs(files) do
