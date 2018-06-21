@@ -6,24 +6,23 @@ This is a test suite for [Emender](https://github.com/emender/emender) framework
 ## How to run it
 To run the test suite locally, follow these steps.
 1. Download the repository to your local machine. You don't need to have the test and documentation in the same folder. In fact, it's advisable not to.
-2. Download the documentation files into a separate folder. This folder must include:
-	* publican.cfg
-		* config file for your documentation, should have a "mainfile" parameter with the name of the master file, e.g. "mainfile: master", otherwise the script will use default master filename ("master").
-    * master file 
-        * located in the "your_language/" subfolder, e.g. "en-US/"
-3. Documentation folder might or might not include "results.includes". It specifies which files (apart from "master.adoc") should be included in the tests if any.
-5. Before running the test make sure to install Aspell dictionary. While it's not necessary, it is recommended.
+2. Download Emender framework [here](https://github.com/emender/emender).
+3. Install Emender by navigating into the source code directory and running `sudo make install`.
+4. Download documentation files into a separate folder. This folder must either include a publican.cfg file with documentation config (DocBook format) or master.adoc (AsciiDoc format).
+5. Before running the tests, make sure to install these dependencies:
 ~~~~~~~~
-sudo dnf install aspell	
-~~~~~~~~ 
-Once it's installed, run the script "generate_dictionary.sh" in the test folder. It will generate "aspell.txt" with the dictionary words.
-6. You'll also need Lua installed.
+sudo dnf install aspell publican lua; gem install asciidoctor
 ~~~~~~~~
-sudo dnf install lua
+6. Run the script "generate_dictionary.sh" in the test folder. It will generate "aspell.txt" with the dictionary words.
+7. You're ready to run the test! Through command line navigate to the documentation folder (or the folder where you want to store the results). From this folder run the following command:
 ~~~~~~~~
-7. Last piece is libraries. These can be downloaded [here](https://github.com/emender/emender-lib/tree/master/lib). You need "docbook.lua", "publican.lua" and "xml.lua". When you first run the test, it will give you an error message and you'll see the path at which these libraries should be placed.
-8. The external services (such as whitelist, blacklist, glossary etc.) are not required, but they give some extra information + have a wider selection of words. Unlike Aspell, these are tailored for the Red Hat documentation team and will have all the latest and greatest updates.
-9. You're ready to run the tests! Through Terminal navigate to the documentation folder. Then type `emend path_to_test_folder/DocumentationConventions.lua` and see the results. You can check available Emender parameters [here](https://github.com/emender/emender/blob/master/doc/man/man1/emend.1.pod).
+PATH_TO_TEST_DIR/run.sh --XdocDir=PATH_TO_DOC_DIR
+Only provide "docDir" argument if the documentation folder is different from the folder you're currently in.
+~~~~~~~~
+This will run a shell script that basically does all the dirty work before running the actual test. After running it you should see the test output on the screen, as well as a bunch of results.* files in the current folder. These files provide the results in various formats.
+8. Add any extra parameters to Emender by using them as shell script arguments. Consult [this](https://github.com/emender/emender/blob/master/doc/man/man1/emend.1.pod) page for more info.
+9. Add extra parameters to the test itself by using them as shell script arguments. Use this construct to do so: `--XparamName=paramValue`
+You can, for example, change "blacklistUrl", "whitelistUrl", "glossaryUrl" and "differentSpellingWordsUrl" in this manner: `--XblacklistUrl=url`
 
 ## Extra
 
